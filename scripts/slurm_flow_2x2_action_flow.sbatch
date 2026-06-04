@@ -16,7 +16,7 @@ REPO=/storage/project/r-agarg35-0/eliu354/external_repos/le-wm
 export STABLEWM_HOME=/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm
 export LEWM_EXPERIMENT_ROOT=${STABLEWM_HOME}/experiments/flow_2x2_20260604
 export PYTHONNOUSERSITE=1
-export WANDB_MODE=${WANDB_MODE:-offline}
+export WANDB_MODE=${WANDB_MODE:-online}
 export WANDB_PROJECT=${WANDB_PROJECT:-lewm-flow-2x2}
 
 mkdir -p "${LEWM_EXPERIMENT_ROOT}/slurm"
@@ -33,6 +33,11 @@ PY="${REPO}/.conda/lewm-flow-2x2/bin/python"
 echo "Action flow: Task=${TASK} Data=${DATA} WM=${WM_VARIANT} Seed=${SEED}"
 echo "World model: ${WORLD_MODEL}"
 
+EXTRA_ARGS=()
+if [ "${TASK}" = "cube" ]; then
+  EXTRA_ARGS+=(data.dataset.name="${STABLEWM_HOME}/ogbench/cube_single_expert.h5")
+fi
+
 "${PY}" train_action_flow.py \
   data="${DATA}" \
   seed="${SEED}" \
@@ -44,4 +49,5 @@ echo "World model: ${WORLD_MODEL}"
   experiment.policy_variant=flow \
   world_model="${WORLD_MODEL}" \
   device=cuda \
-  wandb.enabled=True
+  wandb.enabled=True \
+  "${EXTRA_ARGS[@]}"

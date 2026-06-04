@@ -16,7 +16,7 @@ REPO=/storage/project/r-agarg35-0/eliu354/external_repos/le-wm
 export STABLEWM_HOME=/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm
 export LEWM_EXPERIMENT_ROOT=${STABLEWM_HOME}/experiments/flow_2x2_20260604
 export PYTHONNOUSERSITE=1
-export WANDB_MODE=${WANDB_MODE:-offline}
+export WANDB_MODE=${WANDB_MODE:-online}
 export WANDB_PROJECT=${WANDB_PROJECT:-lewm-flow-2x2}
 
 mkdir -p "${LEWM_EXPERIMENT_ROOT}/slurm"
@@ -40,6 +40,11 @@ echo "Python/Torch: ${python_info}"
 echo "Task=${TASK} Data=${DATA} WM=${WM_VARIANT} Model=${MODEL} Seed=${SEED}"
 echo "WANDB_MODE=${WANDB_MODE}"
 
+EXTRA_ARGS=()
+if [ "${TASK}" = "cube" ]; then
+  EXTRA_ARGS+=(data.dataset.name="${STABLEWM_HOME}/ogbench/cube_single_expert.h5")
+fi
+
 "${PY}" train.py \
   data="${DATA}" \
   model="${MODEL}" \
@@ -54,4 +59,5 @@ echo "WANDB_MODE=${WANDB_MODE}"
   trainer.accelerator=gpu \
   trainer.devices=1 \
   trainer.precision=bf16 \
-  wandb.enabled=True
+  wandb.enabled=True \
+  "${EXTRA_ARGS[@]}"

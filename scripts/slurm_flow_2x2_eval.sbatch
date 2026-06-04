@@ -16,7 +16,7 @@ REPO=/storage/project/r-agarg35-0/eliu354/external_repos/le-wm
 export STABLEWM_HOME=/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm
 export LEWM_EXPERIMENT_ROOT=${STABLEWM_HOME}/experiments/flow_2x2_20260604
 export PYTHONNOUSERSITE=1
-export WANDB_MODE=${WANDB_MODE:-offline}
+export WANDB_MODE=${WANDB_MODE:-online}
 export WANDB_PROJECT=${WANDB_PROJECT:-lewm-flow-2x2}
 
 mkdir -p "${LEWM_EXPERIMENT_ROOT}/slurm"
@@ -44,6 +44,10 @@ COMMON_ARGS=(
   world.max_episode_steps=100
   wandb.enabled=True
 )
+
+if [ "${TASK}" = "cube" ]; then
+  COMMON_ARGS+=(eval.dataset_name="${STABLEWM_HOME}/ogbench/cube_single_expert.h5")
+fi
 
 if [ "${POLICY_VARIANT}" = "flow" ]; then
   : "${ACTION_MODEL_PATH:?ACTION_MODEL_PATH is required for flow policy eval}"

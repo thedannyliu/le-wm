@@ -36,14 +36,37 @@ Date: 2026-06-04
   - `stable_worldmodel.data.load_dataset()` returned `HDF5Dataset len=1980000`.
   - First sample shapes with `num_steps=4`: `pixels=(4, 3, 224, 224)`, `action=(4, 5)`, `observation=(4, 28)`.
 
-## Current Blockers For Formal Runs
+## W&B Status
 
-- W&B status shows no API key configured. Run `wandb login` or set `WANDB_API_KEY` before formal online W&B jobs.
+- W&B login is valid for user `danny010324`.
+- Slurm entrypoints now default to `WANDB_MODE=online`. Explicit `WANDB_MODE=offline` can still be passed for local/offline runs.
 
 ## Submitted Jobs
 
 - Cube dataset download/extract:
   - `9427063`, job name `lewm-cube-data`, CPU job, completed with exit code `0:0`.
+- First formal submission:
+  - PushT world-model training jobs `9426998`, `9426999`, `9427000`, and `9427001` failed after entering W&B offline mode and hitting a `stable_pretraining` offline-run reuse error.
+  - Cube world-model training jobs `9427064`, `9427065`, `9427066`, and `9427067` failed because `data=ogb` resolved through HuggingFace instead of the downloaded local HDF5 file.
+  - Dependent action-flow/eval jobs `9427119`-`9427144` were canceled after their dependencies became unsatisfiable.
+- Resubmitted PushT world-model training:
+  - `9428413`, `lewm-pusht-orig-s0`.
+  - `9428414`, `lewm-pusht-flow-s0`.
+  - `9428415`, `lewm-pusht-orig-s1`.
+  - `9428416`, `lewm-pusht-flow-s1`.
+- Resubmitted Cube world-model training:
+  - `9428417`, `lewm-cube-orig-s0`.
+  - `9428418`, `lewm-cube-flow-s0`.
+  - `9428419`, `lewm-cube-orig-s1`.
+  - `9428420`, `lewm-cube-flow-s1`.
+- Resubmitted action-flow and eval jobs:
+  - Action-flow jobs: `9428421`, `9428424`, `9428427`, `9428430`, `9428433`, `9428436`, `9428439`, `9428442`.
+  - CEM eval jobs: `9428422`, `9428425`, `9428428`, `9428431`, `9428434`, `9428437`, `9428440`, `9428443`.
+  - Flow eval jobs: `9428423`, `9428426`, `9428429`, `9428432`, `9428435`, `9428438`, `9428441`, `9428444`.
+  - Submission record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/flow_2x2_20260604/job_records/resubmit_20260604_151547.tsv`.
+
+Superseded first-submission job IDs:
+
 - PushT world-model training:
   - `9426998`, `lewm-pusht-orig-s0`.
   - `9426999`, `lewm-pusht-flow-s0`.
@@ -59,12 +82,10 @@ Date: 2026-06-04
   - CEM eval jobs: `9427120`, `9427123`, `9427126`, `9427129`, `9427133`, `9427136`, `9427139`, `9427143`.
   - Flow eval jobs: `9427121`, `9427124`, `9427127`, `9427131`, `9427134`, `9427137`, `9427141`, `9427144`.
 
-Because W&B is not logged in, submitted jobs default to `WANDB_MODE=offline`. Run `wandb sync` after login to upload offline runs.
-
 Latest queue check:
 
-- PushT and Cube world-model training jobs are pending on H200 resources.
-- Action-flow and eval jobs are pending on their training dependencies.
+- Resubmitted PushT and Cube world-model training jobs are pending on H200 resources.
+- Resubmitted action-flow and eval jobs are pending on their training dependencies.
 
 ## Notes
 

@@ -171,6 +171,24 @@ Latest queue check:
     - `9432340`, `sup-cube-flow-s1`, `afterany:9432197`.
   - Replacement supervisor record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/flow_2x2_20260604/job_records/supervisor_embers_replace_20260604_192503.tsv`.
   - Validation: `bash -n` passed, `sbatch --test-only` confirmed `cpu-small` with `embers`, and `scontrol show job` confirmed replacement supervisors use `QOS=embers`.
+- Latest active run check:
+  - Job `9431379`, `lewm-cube-flow-s0`, was preempted after roughly 1.5 hours.
+  - Supervisor `9432337` ran with `QOS=embers` and correctly submitted:
+    - `9432486`, `lewm-cube-flow-s0`, running on H200.
+    - `9432487`, `sup-cube-flow-s0`, pending on `afterany:9432486` with `QOS=embers`.
+  - Current active world-model jobs are:
+    - `9431374`, PushT original seed 0, running at epoch 1/100.
+    - `9431375`, PushT flow seed 0, running at epoch 2/100.
+    - `9431377`, PushT flow seed 1, running at epoch 1/100.
+    - `9431378`, Cube original seed 0, running at epoch 0/100.
+    - `9432164`, Cube original seed 1 replacement, running at epoch 1/100.
+    - `9432169`, PushT original seed 1 replacement, running at epoch 1/100.
+    - `9432197`, Cube flow seed 1 replacement, running at epoch 0/100.
+    - `9432486`, Cube flow seed 0 replacement, running at epoch 0/100.
+  - Active log sweep found no new `RuntimeError`, `Traceback`, missing-file error, pin-memory failure, CUDA OOM, or dependency failure.
+  - All eight training `metrics.jsonl` files continue to update.
+  - Repo root still has no `wandb/`, `outputs/`, or `multirun` directories.
+  - W&B and Hydra runtime directories remain under `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/runtime`.
 
 ## Notes
 

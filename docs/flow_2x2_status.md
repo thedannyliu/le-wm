@@ -128,6 +128,12 @@ Latest queue check:
   - All eight train `metrics.jsonl` files are being updated.
   - No `RuntimeError`, `Traceback`, `HTTP Error`, missing-file error, pin-memory failure, or CUDA OOM was found in the latest log sweep.
   - Downstream jobs `9431382`-`9431405` remain pending on valid dependencies.
+- Extended active run check:
+  - After roughly 40-50 minutes of runtime, world-model jobs `9431374`-`9431381` remain running.
+  - PushT jobs are progressing through epoch 1/100 or 2/100; Cube jobs are progressing through epoch 0/100 or 1/100 depending on whether a prior checkpoint existed.
+  - Latest log sweep still found no `RuntimeError`, `Traceback`, `HTTP Error`, missing-file error, pin-memory failure, or CUDA OOM.
+  - All eight training `metrics.jsonl` files continue to update.
+  - Repo root still has no `wandb/`, `outputs/`, or `multirun/` directories.
 
 ## Notes
 

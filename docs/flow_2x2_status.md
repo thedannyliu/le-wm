@@ -119,6 +119,15 @@ Latest queue check:
   - Resubmitted flow eval jobs: `9431384`, `9431387`, `9431390`, `9431393`, `9431396`, `9431399`, `9431402`, `9431405`.
   - Submission record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/flow_2x2_20260604/job_records/resubmit_20260604_175708.tsv`.
   - Latest queue check: world-model jobs `9431374`-`9431381` are pending on H200 priority; downstream jobs `9431382`-`9431405` are pending on valid dependencies.
+- Active run check:
+  - World-model jobs `9431374`-`9431381` started on H200 nodes and are running.
+  - Jobs are writing W&B run data under `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/runtime/wandb/wandb`.
+  - Hydra run directories are under `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/runtime/hydra`.
+  - Repo root has no `wandb/`, `outputs/`, or `multirun/` directories.
+  - Auto-resume loaded existing `last.ckpt` for PushT original seed 0/1, PushT flow seed 0/1, and Cube original seed 1; Cube original seed 0 and Cube flow seed 0/1 started from scratch because no matching `last.ckpt` existed.
+  - All eight train `metrics.jsonl` files are being updated.
+  - No `RuntimeError`, `Traceback`, `HTTP Error`, missing-file error, pin-memory failure, or CUDA OOM was found in the latest log sweep.
+  - Downstream jobs `9431382`-`9431405` remain pending on valid dependencies.
 
 ## Notes
 

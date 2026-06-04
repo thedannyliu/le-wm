@@ -30,6 +30,11 @@ Date: 2026-06-04
 - Train smoke:
   - PushT 1-batch CPU run loaded HDF5 data and wrote local validation metrics.
   - Full CPU fit did not finish within the interactive session; formal training should run on GPU.
+- Cube dataset smoke:
+  - Download/extract job `9427063` completed successfully.
+  - Dataset path: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/ogbench/cube_single_expert.h5`.
+  - `stable_worldmodel.data.load_dataset()` returned `HDF5Dataset len=1980000`.
+  - First sample shapes with `num_steps=4`: `pixels=(4, 3, 224, 224)`, `action=(4, 5)`, `observation=(4, 28)`.
 
 ## Current Blockers For Formal Runs
 
@@ -38,13 +43,13 @@ Date: 2026-06-04
 ## Submitted Jobs
 
 - Cube dataset download/extract:
-  - `9427063`, job name `lewm-cube-data`, CPU job.
+  - `9427063`, job name `lewm-cube-data`, CPU job, completed with exit code `0:0`.
 - PushT world-model training:
   - `9426998`, `lewm-pusht-orig-s0`.
   - `9426999`, `lewm-pusht-flow-s0`.
   - `9427000`, `lewm-pusht-orig-s1`.
   - `9427001`, `lewm-pusht-flow-s1`.
-- Cube world-model training, all dependent on `afterok:9427063`:
+- Cube world-model training, dependency on `9427063` is now satisfied:
   - `9427064`, `lewm-cube-orig-s0`.
   - `9427065`, `lewm-cube-flow-s0`.
   - `9427066`, `lewm-cube-orig-s1`.
@@ -55,6 +60,11 @@ Date: 2026-06-04
   - Flow eval jobs: `9427121`, `9427124`, `9427127`, `9427131`, `9427134`, `9427137`, `9427141`, `9427144`.
 
 Because W&B is not logged in, submitted jobs default to `WANDB_MODE=offline`. Run `wandb sync` after login to upload offline runs.
+
+Latest queue check:
+
+- PushT and Cube world-model training jobs are pending on H200 resources.
+- Action-flow and eval jobs are pending on their training dependencies.
 
 ## Notes
 

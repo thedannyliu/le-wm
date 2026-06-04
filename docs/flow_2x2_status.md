@@ -33,8 +33,28 @@ Date: 2026-06-04
 
 ## Current Blockers For Formal Runs
 
-- OGBench-Cube data is not present under `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm`.
 - W&B status shows no API key configured. Run `wandb login` or set `WANDB_API_KEY` before formal online W&B jobs.
+
+## Submitted Jobs
+
+- Cube dataset download/extract:
+  - `9427063`, job name `lewm-cube-data`, CPU job.
+- PushT world-model training:
+  - `9426998`, `lewm-pusht-orig-s0`.
+  - `9426999`, `lewm-pusht-flow-s0`.
+  - `9427000`, `lewm-pusht-orig-s1`.
+  - `9427001`, `lewm-pusht-flow-s1`.
+- Cube world-model training, all dependent on `afterok:9427063`:
+  - `9427064`, `lewm-cube-orig-s0`.
+  - `9427065`, `lewm-cube-flow-s0`.
+  - `9427066`, `lewm-cube-orig-s1`.
+  - `9427067`, `lewm-cube-flow-s1`.
+- Action-flow and eval jobs were submitted with dependencies:
+  - Action-flow jobs: `9427119`, `9427122`, `9427125`, `9427128`, `9427132`, `9427135`, `9427138`, `9427142`.
+  - CEM eval jobs: `9427120`, `9427123`, `9427126`, `9427129`, `9427133`, `9427136`, `9427139`, `9427143`.
+  - Flow eval jobs: `9427121`, `9427124`, `9427127`, `9427131`, `9427134`, `9427137`, `9427141`, `9427144`.
+
+Because W&B is not logged in, submitted jobs default to `WANDB_MODE=offline`. Run `wandb sync` after login to upload offline runs.
 
 ## Notes
 

@@ -5,7 +5,7 @@
 #SBATCH --partition=gpu-h200
 #SBATCH --gres=gpu:h200:1
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=80G
+#SBATCH --mem=160G
 #SBATCH --time=08:00:00
 #SBATCH --output=/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/flow_2x2_20260604/slurm/%x-%j.out
 #SBATCH --error=/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/flow_2x2_20260604/slurm/%x-%j.err
@@ -15,9 +15,13 @@ set -euo pipefail
 REPO=/storage/project/r-agarg35-0/eliu354/external_repos/le-wm
 export STABLEWM_HOME=/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm
 export LEWM_EXPERIMENT_ROOT=${STABLEWM_HOME}/experiments/flow_2x2_20260604
+source "${REPO}/scripts/slurm_runtime_env.sh"
 export PYTHONNOUSERSITE=1
 export WANDB_MODE=${WANDB_MODE:-online}
 export WANDB_PROJECT=${WANDB_PROJECT:-lewm-flow-2x2}
+export MAX_EPOCHS=${MAX_EPOCHS:-100}
+export NUM_WORKERS=${NUM_WORKERS:-2}
+export RESUME_AUTO=${RESUME_AUTO:-True}
 
 mkdir -p "${LEWM_EXPERIMENT_ROOT}/slurm"
 cd "${REPO}"
@@ -39,6 +43,8 @@ PY
 echo "Python/Torch: ${python_info}"
 echo "Task=${TASK} Data=${DATA} WM=${WM_VARIANT} Model=${MODEL} Seed=${SEED}"
 echo "WANDB_MODE=${WANDB_MODE}"
+echo "MAX_EPOCHS=${MAX_EPOCHS} NUM_WORKERS=${NUM_WORKERS} RESUME_AUTO=${RESUME_AUTO}"
+echo "Runtime root=${LEWM_RUNTIME_ROOT}"
 
 EXTRA_ARGS=()
 if [ "${TASK}" = "cube" ]; then
@@ -59,5 +65,11 @@ fi
   trainer.accelerator=gpu \
   trainer.devices=1 \
   trainer.precision=bf16 \
+  trainer.max_epochs="${MAX_EPOCHS}" \
+  resume.auto="${RESUME_AUTO}" \
+  loader.num_workers="${NUM_WORKERS}" \
+  loader.pin_memory=False \
+  loader.persistent_workers=False \
+  loader.prefetch_factor=1 \
   wandb.enabled=True \
   "${EXTRA_ARGS[@]}"

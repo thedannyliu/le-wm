@@ -8,6 +8,10 @@ output_model_name: lewm
 subdir: ${hydra:job.id}
 cache_dir: null
 
+resume:
+  auto: False
+  ckpt_path: null
+
 experiment:
   output_root: null
   task: pusht

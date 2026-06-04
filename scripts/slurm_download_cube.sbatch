@@ -13,6 +13,7 @@ set -euo pipefail
 
 REPO=/storage/project/r-agarg35-0/eliu354/external_repos/le-wm
 export STABLEWM_HOME=/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm
+source "${REPO}/scripts/slurm_runtime_env.sh"
 export PYTHONNOUSERSITE=1
 
 mkdir -p "${STABLEWM_HOME}/downloads" "${STABLEWM_HOME}/ogbench" "${STABLEWM_HOME}/experiments/flow_2x2_20260604/slurm"

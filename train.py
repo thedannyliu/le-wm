@@ -23,6 +23,15 @@ from module import SIGReg
 from utils import get_column_normalizer, get_img_preprocessor, SaveCkptCallback
 
 
+def find_latest_last_ckpt(run_dir):
+    checkpoints = sorted(
+        (run_dir / "spt" / "runs").glob("**/checkpoints/last.ckpt"),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    )
+    return checkpoints[0] if checkpoints else None
+
+
 def lejepa_forward(self, batch, stage, cfg):
     """encode observations, predict next states, compute losses."""
 
@@ -142,6 +151,16 @@ def run(cfg):
         logger = WandbLogger(**cfg.wandb.config)
         logger.log_hyperparams(OmegaConf.to_container(cfg))
 
+    resume_cfg = cfg.get("resume", {})
+    ckpt_path = resume_cfg.get("ckpt_path")
+    ckpt_path = Path(ckpt_path).expanduser() if ckpt_path else None
+    if ckpt_path is None and resume_cfg.get("auto", False):
+        ckpt_path = find_latest_last_ckpt(experiment_run_dir)
+    if ckpt_path is None:
+        legacy_ckpt_path = run_dir / f"{cfg.output_model_name}_weights.ckpt"
+        ckpt_path = legacy_ckpt_path if legacy_ckpt_path.exists() else None
+    resume_weights_only = False if ckpt_path else True
+
     run_dir.mkdir(parents=True, exist_ok=True)
     experiment_run_dir.mkdir(parents=True, exist_ok=True)
     with open(run_dir / "config.yaml", "w") as f:
@@ -157,6 +176,8 @@ def run(cfg):
             "spt_cache_dir": spt_cache_dir,
             "output_model_name": cfg.output_model_name,
             "metrics_path": str(experiment_run_dir / "metrics.jsonl"),
+            "resume_ckpt_path": str(ckpt_path) if ckpt_path else None,
+            "resume_weights_only": resume_weights_only,
             "wandb": OmegaConf.to_container(cfg.wandb, resolve=True),
         },
     )
@@ -186,12 +207,12 @@ def run(cfg):
         enable_checkpointing=True,
     )
 
-    ckpt_path = run_dir / f"{cfg.output_model_name}_weights.ckpt"
     manager = spt.Manager(
         trainer=trainer,
         module=world_model,
         data=data_module,
-        ckpt_path=ckpt_path if ckpt_path.exists() else None,
+        ckpt_path=ckpt_path if ckpt_path and ckpt_path.exists() else None,
+        weights_only=resume_weights_only,
     )
 
     manager()

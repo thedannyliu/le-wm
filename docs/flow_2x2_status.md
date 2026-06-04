@@ -40,6 +40,9 @@ Date: 2026-06-04
 
 - W&B login is valid for user `danny010324`.
 - Slurm entrypoints now default to `WANDB_MODE=online`. Explicit `WANDB_MODE=offline` can still be passed for local/offline runs.
+- Slurm entrypoints now redirect runtime/cache/tmp outputs to project storage under `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/runtime`:
+  - `XDG_CACHE_HOME`, `XDG_CONFIG_HOME`, `HF_HOME`, `TORCH_HOME`, `MPLCONFIGDIR`, `WANDB_DIR`, `WANDB_CACHE_DIR`, `WANDB_CONFIG_DIR`, and `TMPDIR`.
+  - `$HOME` is not changed so W&B can still read the existing `.netrc` credentials, but large runtime artifacts should not be written into the home directory.
 
 ## Submitted Jobs
 
@@ -64,6 +67,20 @@ Date: 2026-06-04
   - CEM eval jobs: `9428422`, `9428425`, `9428428`, `9428431`, `9428434`, `9428437`, `9428440`, `9428443`.
   - Flow eval jobs: `9428423`, `9428426`, `9428429`, `9428432`, `9428435`, `9428438`, `9428441`, `9428444`.
   - Submission record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/flow_2x2_20260604/job_records/resubmit_20260604_151547.tsv`.
+- Second formal submission diagnosis:
+  - Most world-model jobs exited around 1 hour with `RuntimeError: Pin memory thread exited unexpectedly`.
+  - Slurm epilog showed memory usage near the 80GB request, so the likely cause was DataLoader/pinned-memory pressure rather than W&B.
+  - Existing partial checkpoints were produced for several variants under each `train/spt/runs/.../checkpoints/last.ckpt`.
+  - Old dependency jobs `9428421`-`9428444` and the one still-running training job `9428414` were canceled before resubmission.
+- Current 100-epoch resumable submission:
+  - World-model jobs request 160GB, use `loader.num_workers=2`, `loader.pin_memory=False`, `loader.persistent_workers=False`, and `loader.prefetch_factor=1`.
+  - World-model jobs run with `resume.auto=True`, which resumes from the latest matching `train/spt/runs/**/checkpoints/last.ckpt` when available.
+  - PushT world-model training: `9430990`, `9430991`, `9430992`, `9430993`.
+  - Cube world-model training: `9430994`, `9430995`, `9430996`, `9430997`.
+  - Action-flow jobs: `9430998`, `9431001`, `9431004`, `9431007`, `9431010`, `9431013`, `9431016`, `9431019`.
+  - CEM eval jobs: `9430999`, `9431002`, `9431005`, `9431008`, `9431011`, `9431014`, `9431017`, `9431020`.
+  - Flow eval jobs: `9431000`, `9431003`, `9431006`, `9431009`, `9431012`, `9431015`, `9431018`, `9431021`.
+  - Submission record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/flow_2x2_20260604/job_records/resubmit_20260604_173130.tsv`.
 
 Superseded first-submission job IDs:
 
@@ -84,8 +101,8 @@ Superseded first-submission job IDs:
 
 Latest queue check:
 
-- Resubmitted PushT and Cube world-model training jobs are pending on H200 resources.
-- Resubmitted action-flow and eval jobs are pending on their training dependencies.
+- Current world-model training jobs `9430990`-`9430997` are pending on H200 priority.
+- Current action-flow and eval jobs `9430998`-`9431021` are pending on valid dependencies.
 
 ## Notes
 

@@ -5,7 +5,7 @@
 #SBATCH --partition=gpu-h200
 #SBATCH --gres=gpu:h200:1
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=80G
+#SBATCH --mem=160G
 #SBATCH --time=08:00:00
 #SBATCH --output=/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/flow_2x2_20260604/slurm/%x-%j.out
 #SBATCH --error=/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/flow_2x2_20260604/slurm/%x-%j.err
@@ -15,9 +15,12 @@ set -euo pipefail
 REPO=/storage/project/r-agarg35-0/eliu354/external_repos/le-wm
 export STABLEWM_HOME=/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm
 export LEWM_EXPERIMENT_ROOT=${STABLEWM_HOME}/experiments/flow_2x2_20260604
+source "${REPO}/scripts/slurm_runtime_env.sh"
 export PYTHONNOUSERSITE=1
 export WANDB_MODE=${WANDB_MODE:-online}
 export WANDB_PROJECT=${WANDB_PROJECT:-lewm-flow-2x2}
+export ACTION_MAX_EPOCHS=${ACTION_MAX_EPOCHS:-20}
+export NUM_WORKERS=${NUM_WORKERS:-2}
 
 mkdir -p "${LEWM_EXPERIMENT_ROOT}/slurm"
 cd "${REPO}"
@@ -32,6 +35,8 @@ PY="${REPO}/.conda/lewm-flow-2x2/bin/python"
 
 echo "Action flow: Task=${TASK} Data=${DATA} WM=${WM_VARIANT} Seed=${SEED}"
 echo "World model: ${WORLD_MODEL}"
+echo "ACTION_MAX_EPOCHS=${ACTION_MAX_EPOCHS} NUM_WORKERS=${NUM_WORKERS}"
+echo "Runtime root=${LEWM_RUNTIME_ROOT}"
 
 EXTRA_ARGS=()
 if [ "${TASK}" = "cube" ]; then
@@ -49,5 +54,10 @@ fi
   experiment.policy_variant=flow \
   world_model="${WORLD_MODEL}" \
   device=cuda \
+  trainer.max_epochs="${ACTION_MAX_EPOCHS}" \
+  loader.num_workers="${NUM_WORKERS}" \
+  loader.pin_memory=False \
+  loader.persistent_workers=False \
+  loader.prefetch_factor=1 \
   wandb.enabled=True \
   "${EXTRA_ARGS[@]}"

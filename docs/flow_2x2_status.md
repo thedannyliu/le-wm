@@ -103,6 +103,11 @@ Latest queue check:
 
 - Current world-model training jobs `9430990`-`9430997` are pending on H200 priority.
 - Current action-flow and eval jobs `9430998`-`9431021` are pending on valid dependencies.
+- Follow-up check:
+  - `9430990`-`9431021` have not started yet; no new Slurm logs or failures were present.
+  - World-model jobs request `cpu=8,mem=160G,gres/gpu:h200=1`.
+  - No repo-root `wandb/`, `outputs/`, or `multirun/` directories were present after the cleanup.
+  - Partial `last.ckpt` files are available for auto-resume for PushT original seed 0/1, PushT flow seed 0/1, and Cube original seed 1.
 
 ## Notes
 

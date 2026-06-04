@@ -2,37 +2,36 @@ defaults:
   - _self_
   - launcher: local
   - data: pusht
-  - model: lewm
 
-output_model_name: lewm
-subdir: ${hydra:job.id}
+world_model: ???
+checkpoint_cache_dir: null
 cache_dir: null
+device: cuda
+output_model_name: action_flow
+subdir: ${hydra:job.id}
 
 experiment:
   output_root: null
   task: pusht
   wm_variant: original
-  policy_variant: original
+  policy_variant: flow
   variant: wm_${experiment.wm_variant}_policy_${experiment.policy_variant}
   use_run_dir_for_lightning: true
-  spt_cache_dir: null
 
-logging:
-  jsonl_every_n_steps: 50
+plan_config:
+  horizon: 5
 
-num_workers: 6
 train_split: 0.9
 seed: 3072
 img_size: 224
 embed_dim: 192
-history_size: 3
+history_size: 1
+num_preds: ${plan_config.horizon}
+num_workers: 6
+gradient_clip_val: 1.0
 
 trainer:
   max_epochs: 100
-  devices: auto
-  accelerator: gpu
-  precision: bf16
-  gradient_clip_val: 1.0
 
 loader:
   batch_size: 128
@@ -42,15 +41,20 @@ loader:
   pin_memory: True
 
 optimizer:
-  type: AdamW
   lr: 5e-5
   weight_decay: 1e-3
 
-num_preds: 1
+logging:
+  wandb_every_n_steps: 50
+  jsonl_every_n_steps: 50
 
-loss:
-  sigreg:
-    weight: 0.09
-    kwargs:
-      knots: 17
-      num_proj: 1024
+action_model:
+  _target_: module.ConditionalActionFlow
+  condition_dim: ???
+  action_dim: ???
+  horizon: ???
+  hidden_dim: 256
+  depth: 4
+  time_dim: 64
+  sample_steps: 8
+  stochastic_sample: true

@@ -34,11 +34,12 @@ def get_column_normalizer(dataset, source: str, target: str):
 class SaveCkptCallback(Callback):
     """Callback to save model checkpoint after each epoch using save_pretrained."""
 
-    def __init__(self, run_name, cfg, epoch_interval: int = 1):
+    def __init__(self, run_name, cfg, epoch_interval: int = 1, cache_dir=None):
         super().__init__()
         self.run_name = run_name
         self.cfg = cfg
         self.epoch_interval = epoch_interval
+        self.cache_dir = cache_dir
 
     def on_train_epoch_end(self, trainer, pl_module):
         super().on_train_epoch_end(trainer, pl_module)
@@ -57,4 +58,5 @@ class SaveCkptCallback(Callback):
             run_name=self.run_name,
             config=self.cfg,
             filename=f'weights_epoch_{epoch}.pt',
+            cache_dir=self.cache_dir,
         )

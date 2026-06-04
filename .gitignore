@@ -1,0 +1,17 @@
+.conda/
+.venv/
+__pycache__/
+*.py[cod]
+
+outputs/
+wandb/
+env_*.mp4
+*_results.txt
+
+checkpoints/
+experiments/
+*.ckpt
+*.pt
+*.pth
+*.mp4
+*.log

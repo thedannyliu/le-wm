@@ -7,9 +7,18 @@ import lightning as pl
 import stable_pretraining as spt
 import stable_worldmodel as swm
 import torch
+from lightning.pytorch.callbacks import LearningRateMonitor
 from lightning.pytorch.loggers import WandbLogger
 from omegaconf import OmegaConf, open_dict
 
+from experiment_logging import (
+    JsonlMetricsCallback,
+    get_experiment_root,
+    get_run_dir,
+    get_task_name,
+    get_variant_name,
+    write_run_files,
+)
 from module import SIGReg
 from utils import get_column_normalizer, get_img_preprocessor, SaveCkptCallback
 
@@ -33,15 +42,24 @@ def lejepa_forward(self, batch, stage, cfg):
     ctx_act = act_emb[:, : ctx_len]
 
     tgt_emb = emb[:, n_preds:] # label
-    pred_emb = self.model.predict(ctx_emb, ctx_act) # pred
+    is_flow_predictor = hasattr(self.model.predictor, "flow_loss")
 
     # LeWM loss
-    output["pred_loss"] = (pred_emb - tgt_emb).pow(2).mean()
+    if is_flow_predictor:
+        output["flow_loss"] = self.model.predictor.flow_loss(ctx_emb, ctx_act, tgt_emb)
+        with torch.no_grad():
+            pred_emb = self.model.predict(ctx_emb, ctx_act)
+            output["pred_loss"] = (pred_emb - tgt_emb).pow(2).mean()
+    else:
+        pred_emb = self.model.predict(ctx_emb, ctx_act) # pred
+        output["pred_loss"] = (pred_emb - tgt_emb).pow(2).mean()
+
     output["sigreg_loss"]= self.sigreg(emb.transpose(0, 1))
-    output["loss"] = output["pred_loss"] + lambd * output["sigreg_loss"]  
+    prediction_objective = output.get("flow_loss", output["pred_loss"])
+    output["loss"] = prediction_objective + lambd * output["sigreg_loss"]
 
     losses_dict = {f"{stage}/{k}": v.detach() for k, v in output.items() if "loss" in k}
-    self.log_dict(losses_dict, on_step=True, sync_dist=True)
+    self.log_dict(losses_dict, on_step=True, on_epoch=True, sync_dist=True)
     return output
 
 @hydra.main(version_base=None, config_path="./config/train", config_name="lewm")
@@ -52,7 +70,7 @@ def run(cfg):
 
     dataset_cfg = OmegaConf.to_container(cfg.data.dataset, resolve=True)
     dataset_name = dataset_cfg.pop("name")
-    cache_dir = os.environ.get("LOCAL_DATASET_DIR", None)
+    cache_dir = cfg.get("cache_dir") or os.environ.get("LOCAL_DATASET_DIR", None)
     dataset = swm.data.load_dataset(
         dataset_name, transform=None, cache_dir=cache_dir, **dataset_cfg
     )
@@ -105,8 +123,19 @@ def run(cfg):
     ##       training       ##
     ##########################
 
+    experiment_run_dir = get_run_dir(cfg, swm, "train")
     run_id = cfg.get("subdir") or ""
     run_dir = Path(swm.data.utils.get_cache_dir(sub_folder='checkpoints'), run_id)
+    if cfg.get("experiment", {}).get("use_run_dir_for_lightning", True):
+        run_dir = experiment_run_dir / "lightning"
+    experiment_root = get_experiment_root(cfg, swm)
+    spt_cache_dir = cfg.get("experiment", {}).get("spt_cache_dir") or str(
+        experiment_run_dir / "spt"
+    )
+    spt.set(cache_dir=spt_cache_dir)
+    checkpoint_run_name = cfg.get("checkpoint_run_name") or str(
+        Path(get_task_name(cfg), get_variant_name(cfg), f"seed_{cfg.seed}", cfg.output_model_name)
+    )
 
     logger = None
     if cfg.wandb.enabled:
@@ -114,16 +143,44 @@ def run(cfg):
         logger.log_hyperparams(OmegaConf.to_container(cfg))
 
     run_dir.mkdir(parents=True, exist_ok=True)
+    experiment_run_dir.mkdir(parents=True, exist_ok=True)
     with open(run_dir / "config.yaml", "w") as f:
         OmegaConf.save(cfg, f)
+    write_run_files(
+        experiment_run_dir,
+        cfg,
+        "train",
+        extra={
+            "checkpoint_dir": str(run_dir),
+            "checkpoint_cache_dir": str(experiment_root),
+            "checkpoint_run_name": checkpoint_run_name,
+            "spt_cache_dir": spt_cache_dir,
+            "output_model_name": cfg.output_model_name,
+            "metrics_path": str(experiment_run_dir / "metrics.jsonl"),
+            "wandb": OmegaConf.to_container(cfg.wandb, resolve=True),
+        },
+    )
 
     object_dump_callback = SaveCkptCallback(
-        run_name=cfg.output_model_name, cfg=cfg.model, epoch_interval=1,
+        run_name=checkpoint_run_name,
+        cfg=cfg.model,
+        epoch_interval=1,
+        cache_dir=experiment_root,
     )
+
+    callbacks = [
+        object_dump_callback,
+        JsonlMetricsCallback(
+            experiment_run_dir / "metrics.jsonl",
+            every_n_steps=cfg.get("logging", {}).get("jsonl_every_n_steps", 50),
+        ),
+    ]
+    if cfg.wandb.enabled:
+        callbacks.append(LearningRateMonitor(logging_interval="step"))
 
     trainer = pl.Trainer(
         **cfg.trainer,
-        callbacks=[object_dump_callback],
+        callbacks=callbacks,
         num_sanity_val_steps=1,
         logger=logger,
         enable_checkpointing=True,

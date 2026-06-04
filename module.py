@@ -283,3 +283,208 @@ class ARPredictor(nn.Module):
         x = self.dropout(x)
         x = self.transformer(x, c)
         return x
+
+
+class TimestepEmbedder(nn.Module):
+    def __init__(self, dim, frequency_dim=64):
+        super().__init__()
+        self.frequency_dim = frequency_dim
+        self.mlp = nn.Sequential(
+            nn.Linear(frequency_dim, dim),
+            nn.SiLU(),
+            nn.Linear(dim, dim),
+        )
+
+    def forward(self, t):
+        """
+        t: (B,) or (B, 1)
+        """
+        if t.ndim == 2:
+            t = t[:, 0]
+        half = self.frequency_dim // 2
+        freqs = torch.exp(
+            -torch.arange(half, device=t.device, dtype=t.dtype)
+            * torch.log(torch.tensor(10000.0, device=t.device, dtype=t.dtype))
+            / max(half - 1, 1)
+        )
+        args = t[:, None] * freqs[None]
+        emb = torch.cat([args.sin(), args.cos()], dim=-1)
+        if emb.size(-1) < self.frequency_dim:
+            emb = F.pad(emb, (0, self.frequency_dim - emb.size(-1)))
+        return self.mlp(emb)
+
+
+class ConditionalFlowPredictor(nn.Module):
+    """Conditional flow-matching predictor for next latent embeddings."""
+
+    def __init__(
+        self,
+        *,
+        num_frames,
+        depth,
+        heads,
+        mlp_dim,
+        input_dim,
+        hidden_dim,
+        output_dim=None,
+        dim_head=64,
+        dropout=0.0,
+        emb_dropout=0.0,
+        time_dim=64,
+        sample_steps=8,
+        stochastic_sample=False,
+    ):
+        super().__init__()
+        output_dim = output_dim or input_dim
+        self.output_dim = output_dim
+        self.sample_steps = sample_steps
+        self.stochastic_sample = stochastic_sample
+        self.pos_embedding = nn.Parameter(torch.randn(1, num_frames, input_dim))
+        self.dropout = nn.Dropout(emb_dropout)
+        self.time_embed = TimestepEmbedder(input_dim, frequency_dim=time_dim)
+        self.cond_proj = nn.Sequential(
+            nn.LayerNorm(input_dim * 3),
+            nn.Linear(input_dim * 3, input_dim),
+            nn.SiLU(),
+            nn.Linear(input_dim, input_dim),
+        )
+        self.noisy_proj = (
+            nn.Linear(output_dim, input_dim)
+            if output_dim != input_dim
+            else nn.Identity()
+        )
+        self.transformer = Transformer(
+            input_dim,
+            hidden_dim,
+            output_dim,
+            depth,
+            heads,
+            dim_head,
+            mlp_dim,
+            dropout,
+            block_class=ConditionalBlock,
+        )
+
+    def _condition(self, ctx, act, t):
+        T = ctx.size(1)
+        t_emb = self.time_embed(t).unsqueeze(1).expand(-1, T, -1)
+        return self.cond_proj(torch.cat([ctx, act, t_emb], dim=-1))
+
+    def vector_field(self, ctx, act, noisy_target, t):
+        """
+        ctx: (B, T, D)
+        act: (B, T, D)
+        noisy_target: (B, T, D)
+        t: (B,) or (B, 1)
+        """
+        T = noisy_target.size(1)
+        x = self.noisy_proj(noisy_target) + self.pos_embedding[:, :T]
+        x = self.dropout(x)
+        c = self._condition(ctx, act, t)
+        return self.transformer(x, c)
+
+    def flow_loss(self, ctx, act, target):
+        B = target.size(0)
+        t = torch.rand(B, device=target.device, dtype=target.dtype)
+        noise = torch.randn_like(target)
+        path_t = t.view(B, 1, 1)
+        noisy = (1.0 - path_t) * noise + path_t * target
+        velocity_target = target - noise
+        velocity_pred = self.vector_field(ctx, act, noisy, t)
+        return F.mse_loss(velocity_pred, velocity_target)
+
+    @torch.no_grad()
+    def sample(self, ctx, act, steps=None, stochastic=None):
+        steps = steps or self.sample_steps
+        stochastic = self.stochastic_sample if stochastic is None else stochastic
+        x = torch.randn_like(ctx) if stochastic else torch.zeros_like(ctx)
+        dt = 1.0 / steps
+        for i in range(steps):
+            t = torch.full(
+                (ctx.size(0),),
+                i / steps,
+                device=ctx.device,
+                dtype=ctx.dtype,
+            )
+            x = x + dt * self.vector_field(ctx, act, x, t)
+        return x
+
+    def forward(self, ctx, act):
+        return self.sample(ctx, act)
+
+
+class ConditionalActionFlow(nn.Module):
+    """Flow-matching model for goal-conditioned action chunk proposals."""
+
+    def __init__(
+        self,
+        *,
+        condition_dim,
+        action_dim,
+        horizon,
+        hidden_dim=256,
+        depth=4,
+        time_dim=64,
+        sample_steps=8,
+        stochastic_sample=True,
+    ):
+        super().__init__()
+        self.action_dim = action_dim
+        self.horizon = horizon
+        self.sample_steps = sample_steps
+        self.stochastic_sample = stochastic_sample
+        self.time_embed = TimestepEmbedder(hidden_dim, frequency_dim=time_dim)
+        input_dim = action_dim + condition_dim + hidden_dim
+        layers = [
+            nn.Linear(input_dim, hidden_dim),
+            nn.SiLU(),
+        ]
+        for _ in range(depth - 1):
+            layers.extend([nn.Linear(hidden_dim, hidden_dim), nn.SiLU()])
+        layers.append(nn.Linear(hidden_dim, action_dim))
+        self.net = nn.Sequential(*layers)
+
+    def _expand_condition(self, condition, horizon):
+        if condition.ndim == 2:
+            condition = condition.unsqueeze(1)
+        if condition.size(1) == 1:
+            condition = condition.expand(-1, horizon, -1)
+        return condition
+
+    def vector_field(self, condition, noisy_action, t):
+        horizon = noisy_action.size(1)
+        condition = self._expand_condition(condition, horizon)
+        t_emb = self.time_embed(t).unsqueeze(1).expand(-1, horizon, -1)
+        x = torch.cat([noisy_action, condition, t_emb], dim=-1)
+        return self.net(x)
+
+    def flow_loss(self, condition, target_action):
+        B = target_action.size(0)
+        t = torch.rand(B, device=target_action.device, dtype=target_action.dtype)
+        noise = torch.randn_like(target_action)
+        path_t = t.view(B, 1, 1)
+        noisy = (1.0 - path_t) * noise + path_t * target_action
+        velocity_target = target_action - noise
+        velocity_pred = self.vector_field(condition, noisy, t)
+        return F.mse_loss(velocity_pred, velocity_target)
+
+    @torch.no_grad()
+    def sample(self, condition, num_samples=1, steps=None, stochastic=None):
+        steps = steps or self.sample_steps
+        stochastic = self.stochastic_sample if stochastic is None else stochastic
+        if condition.ndim == 2:
+            condition = condition.unsqueeze(1)
+        B = condition.size(0)
+        condition = condition[:, None].expand(B, num_samples, *condition.shape[1:])
+        condition = rearrange(condition, "b s t d -> (b s) t d")
+        x_shape = (B * num_samples, self.horizon, self.action_dim)
+        x = (
+            torch.randn(x_shape, device=condition.device, dtype=condition.dtype)
+            if stochastic
+            else torch.zeros(x_shape, device=condition.device, dtype=condition.dtype)
+        )
+        dt = 1.0 / steps
+        for i in range(steps):
+            t = torch.full((x.size(0),), i / steps, device=x.device, dtype=x.dtype)
+            x = x + dt * self.vector_field(condition, x, t)
+        return rearrange(x, "(b s) t d -> b s t d", b=B, s=num_samples)

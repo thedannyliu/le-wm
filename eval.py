@@ -9,10 +9,19 @@ import hydra
 import numpy as np
 import stable_pretraining as spt
 import torch
+import wandb
 from omegaconf import DictConfig, OmegaConf
 from sklearn import preprocessing
 from torchvision.transforms import v2 as transforms
 import stable_worldmodel as swm
+
+from experiment_logging import (
+    append_jsonl,
+    get_run_dir,
+    serializable,
+    wandb_init_kwargs,
+    write_run_files,
+)
 
 def img_transform(cfg):
     transform = transforms.Compose(
@@ -39,12 +48,23 @@ def get_episodes_length(dataset, episodes):
 
 def get_dataset(cfg, dataset_name):
     dataset_path = Path(cfg.cache_dir or swm.data.utils.get_cache_dir())
-    dataset = swm.data.HDF5Dataset(
-        dataset_name,
+    if hasattr(swm.data, "HDF5Dataset"):
+        return swm.data.HDF5Dataset(
+            dataset_name,
+            keys_to_cache=cfg.dataset.keys_to_cache,
+            cache_dir=dataset_path,
+        )
+
+    candidates = [Path(dataset_name)]
+    if not str(dataset_name).endswith(".h5"):
+        candidates.append(Path(f"{dataset_name}.h5"))
+    candidates.extend([dataset_path / candidate for candidate in list(candidates)])
+    dataset_ref = next((path for path in candidates if path.exists()), dataset_name)
+    return swm.data.load_dataset(
+        str(dataset_ref),
+        cache_dir=str(dataset_path),
         keys_to_cache=cfg.dataset.keys_to_cache,
-        cache_dir=dataset_path,
     )
-    return dataset
 
 @hydra.main(version_base=None, config_path="./config/eval", config_name="pusht")
 def run(cfg: DictConfig):
@@ -82,11 +102,25 @@ def run(cfg: DictConfig):
             process[f"goal_{col}"] = process[col]
 
     # -- run evaluation
-    policy = cfg.get("policy", "random")
+    policy_name = cfg.get("policy", "random")
 
-    if policy != "random":
-        model = swm.wm.utils.load_pretrained(cfg.policy)
-        model = model.to("cuda")
+    run_dir = get_run_dir(cfg, swm, "eval")
+    video_dir = run_dir / "videos"
+    results_file = run_dir / cfg.output.filename
+    run_dir.mkdir(parents=True, exist_ok=True)
+
+    wb_run = None
+    if cfg.get("wandb", {}).get("enabled", False):
+        wb_run = wandb.init(
+            **wandb_init_kwargs(cfg.wandb.config),
+            config=OmegaConf.to_container(cfg, resolve=True),
+        )
+
+    if policy_name != "random":
+        checkpoint_cache_dir = cfg.get("checkpoint_cache_dir") or cfg.get("cache_dir")
+        model = swm.wm.utils.load_pretrained(policy_name, cache_dir=checkpoint_cache_dir)
+        device = cfg.get("device") or cfg.solver.get("device", "cuda")
+        model = model.to(device)
         model = model.eval()
         model.requires_grad_(False)
         model.interpolate_pos_encoding = True
@@ -99,10 +133,18 @@ def run(cfg: DictConfig):
     else:
         policy = swm.policy.RandomPolicy()
 
-    results_path = (
-        Path(swm.data.utils.get_cache_dir(), cfg.policy).parent
-        if cfg.policy != "random"
-        else Path(__file__).parent
+    write_run_files(
+        run_dir,
+        cfg,
+        "eval",
+        extra={
+            "policy": policy_name,
+            "checkpoint_cache_dir": cfg.get("checkpoint_cache_dir") or cfg.get("cache_dir"),
+            "metrics_path": str(run_dir / "metrics.jsonl"),
+            "results_file": str(results_file),
+            "video_dir": str(video_dir),
+            "wandb": OmegaConf.to_container(cfg.get("wandb", {}), resolve=True),
+        },
     )
 
     # sample the episodes and the starting indices
@@ -138,7 +180,7 @@ def run(cfg: DictConfig):
 
     world.set_policy(policy)
 
-    results_path.mkdir(parents=True, exist_ok=True)
+    video_dir.mkdir(parents=True, exist_ok=True)
 
     start_time = time.time()
     metrics = world.evaluate(
@@ -148,16 +190,45 @@ def run(cfg: DictConfig):
         eval_budget=cfg.eval.eval_budget,
         episodes_idx=eval_episodes.tolist(),
         callables=OmegaConf.to_container(cfg.eval.get("callables"), resolve=True),
-        video=results_path,
+        video=video_dir,
     )
     end_time = time.time()
     
     print(metrics)
 
-    results_path = results_path / cfg.output.filename
-    results_path.parent.mkdir(parents=True, exist_ok=True)
+    eval_record = {
+        "stage": "real_env_eval",
+        "metrics": metrics,
+        "evaluation_time": end_time - start_time,
+        "seed": cfg.seed,
+        "policy": policy_name,
+        "solver": OmegaConf.to_container(cfg.get("solver", {}), resolve=True),
+        "plan_config": OmegaConf.to_container(cfg.plan_config, resolve=True),
+        "video_dir": str(video_dir),
+    }
+    if policy_name != "random" and hasattr(policy, "solver") and hasattr(policy.solver, "last_solve_stats"):
+        eval_record["solver_stats"] = policy.solver.last_solve_stats
+    append_jsonl(run_dir / "metrics.jsonl", eval_record)
 
-    with results_path.open("a") as f:
+    if wb_run is not None:
+        wandb_metrics = {
+            "eval/evaluation_time": end_time - start_time,
+            "eval/seed": cfg.seed,
+        }
+        if isinstance(metrics, dict):
+            for key, value in serializable(metrics).items():
+                if isinstance(value, (int, float, bool)):
+                    wandb_metrics[f"eval/{key}"] = value
+        if "solver_stats" in eval_record:
+            for key, value in serializable(eval_record["solver_stats"]).items():
+                if isinstance(value, (int, float, bool)):
+                    wandb_metrics[f"eval/{key}"] = value
+        wb_run.log(wandb_metrics)
+        for video_path in sorted(video_dir.glob("*.mp4")):
+            wb_run.log({f"eval/video/{video_path.stem}": wandb.Video(str(video_path))})
+        wb_run.finish()
+
+    with results_file.open("a") as f:
         f.write("\n")  # separate from previous runs
 
         f.write("==== CONFIG ====\n")

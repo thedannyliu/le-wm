@@ -1,0 +1,20 @@
+_target_: flow_solver.FlowProposalSolver
+_recursive_: false
+model: ???
+action_model:
+  _target_: module.ConditionalActionFlow
+  condition_dim: ???
+  action_dim: ???
+  horizon: ???
+  hidden_dim: 256
+  depth: 4
+  time_dim: 64
+  sample_steps: 8
+  stochastic_sample: true
+action_model_path: null
+action_model_cache_dir: null
+condition_dim: 384
+num_samples: 300
+device: "cuda"
+seed: ${seed}
+include_zero_action: true

@@ -17,6 +17,15 @@ dataset:
 
 seed: 42
 policy: random # ckpt name or random
+checkpoint_cache_dir: null
+device: cuda
+
+experiment:
+  output_root: null
+  task: pusht
+  wm_variant: original
+  policy_variant: original
+  variant: wm_${experiment.wm_variant}_policy_${experiment.policy_variant}
 
 plan_config:
   horizon: 5

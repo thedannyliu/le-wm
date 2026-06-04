@@ -1,0 +1,19 @@
+name: lewm-flow-2x2
+channels:
+  - pytorch
+  - nvidia
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - pip:
+      - stable-worldmodel[train,env]
+      - wandb
+      - hdf5plugin
+      - packaging
+      - platformdirs
+      - psutil
+      - pygments
+      - pyyaml
+      - urllib3
+      - wcwidth

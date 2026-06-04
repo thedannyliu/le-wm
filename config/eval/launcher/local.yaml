@@ -5,3 +5,20 @@ defaults:
   - override /hydra/launcher: basic
 
 cache_dir: null # use stable-worldmodel default cache
+checkpoint_cache_dir: null
+device: cuda
+
+wandb:
+  enabled: True
+  config:
+    entity: null
+    project: lewm-flow-2x2
+    group: ${experiment.task}/${experiment.wm_variant}/${experiment.policy_variant}/eval
+    name: ${experiment.task}_${experiment.wm_variant}_${experiment.policy_variant}_seed${seed}_eval
+    tags:
+      - flow-2x2
+      - eval
+      - ${experiment.task}
+      - ${experiment.wm_variant}
+      - ${experiment.policy_variant}
+      - seed_${seed}

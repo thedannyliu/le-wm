@@ -134,6 +134,23 @@ Latest queue check:
   - Latest log sweep still found no `RuntimeError`, `Traceback`, `HTTP Error`, missing-file error, pin-memory failure, or CUDA OOM.
   - All eight training `metrics.jsonl` files continue to update.
   - Repo root still has no `wandb/`, `outputs/`, or `multirun/` directories.
+- Continuation-supervisor correction:
+  - A dependency design issue was found: the active world-model jobs target 100 epochs with an 8-hour `embers` limit, so the first GPU chunk is expected to timeout before epoch 100 and direct `afterok` action/eval jobs would become unsatisfiable.
+  - Added `scripts/slurm_flow_2x2_supervisor.sbatch`, a short `cpu-small` supervisor job that runs after each world-model chunk with `afterany`.
+  - The supervisor checks for the final checkpoint `weights_epoch_100.pt`. If it is missing after a timeout/preemption/completion, it submits the next resumable world-model GPU chunk with `resume.auto=True`; if it exists, it submits action-flow, CEM eval, and flow eval jobs.
+  - Updated `scripts/submit_flow_2x2_full.sh` so future full submissions attach supervisors instead of direct action/eval dependencies to the first world-model chunk.
+  - Canceled stale direct downstream jobs `9431382`-`9431405` before they could become dependency failures.
+  - Attached replacement supervisors:
+    - `9432069`, `sup-pusht-original-s0`, `afterany:9431374`.
+    - `9432070`, `sup-pusht-flow-s0`, `afterany:9431375`.
+    - `9432071`, `sup-pusht-original-s1`, `afterany:9431376`.
+    - `9432072`, `sup-pusht-flow-s1`, `afterany:9431377`.
+    - `9432073`, `sup-cube-original-s0`, `afterany:9431378`.
+    - `9432074`, `sup-cube-flow-s0`, `afterany:9431379`.
+    - `9432075`, `sup-cube-original-s1`, `afterany:9431380`.
+    - `9432076`, `sup-cube-flow-s1`, `afterany:9431381`.
+  - Supervisor submission record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/flow_2x2_20260604/job_records/supervisor_attach_20260604_190730.tsv`.
+  - Validation: `bash -n` passed for all flow Slurm scripts, and `sbatch --test-only` confirmed the supervisor script is schedulable on `cpu-small`.
 
 ## Notes
 

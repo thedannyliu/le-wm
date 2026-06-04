@@ -55,29 +55,12 @@ for TASK in pusht cube; do
       else
         MODEL_NAME=lewm_flow
       fi
-      WORLD_MODEL="${TASK}/wm_${WM}_policy_original/seed_${SEED}/${MODEL_NAME}/weights_epoch_${WM_EPOCH}.pt"
-      ACTION_MODEL_PATH="${ROOT}/${TASK}/wm_${WM}_policy_flow/seed_${SEED}/action_flow/action_flow.pt"
-
-      af_id=$(sbatch --parsable \
-        --dependency=afterok:${train_id} \
-        --job-name="af-${TASK}-${WM}-s${SEED}" \
-        --export=ALL,WANDB_MODE=online,ACTION_MAX_EPOCHS="${ACTION_MAX_EPOCHS}",NUM_WORKERS="${NUM_WORKERS}",TASK="${TASK}",DATA="${DATA}",WM_VARIANT="${WM}",WORLD_MODEL="${WORLD_MODEL}",SEED="${SEED}" \
-        scripts/slurm_flow_2x2_action_flow.sbatch)
-      printf 'action_flow\t%s\t%s\tflow\t%s\t%s\tafterok:%s\n' "${TASK}" "${WM}" "${SEED}" "${af_id}" "${train_id}" | tee -a "${RECORD}"
-
-      cem_id=$(sbatch --parsable \
-        --dependency=afterok:${train_id} \
-        --job-name="ev-${TASK}-${WM}-cem-s${SEED}" \
-        --export=ALL,WANDB_MODE=online,TASK="${TASK}",CONFIG_NAME="${CONFIG}",WM_VARIANT="${WM}",POLICY_VARIANT=original,POLICY="${WORLD_MODEL}",SEED="${SEED}" \
-        scripts/slurm_flow_2x2_eval.sbatch)
-      printf 'eval\t%s\t%s\toriginal\t%s\t%s\tafterok:%s\n' "${TASK}" "${WM}" "${SEED}" "${cem_id}" "${train_id}" | tee -a "${RECORD}"
-
-      flow_id=$(sbatch --parsable \
-        --dependency=afterok:${af_id} \
-        --job-name="ev-${TASK}-${WM}-flow-s${SEED}" \
-        --export=ALL,WANDB_MODE=online,TASK="${TASK}",CONFIG_NAME="${CONFIG}",WM_VARIANT="${WM}",POLICY_VARIANT=flow,POLICY="${WORLD_MODEL}",ACTION_MODEL_PATH="${ACTION_MODEL_PATH}",SEED="${SEED}" \
-        scripts/slurm_flow_2x2_eval.sbatch)
-      printf 'eval\t%s\t%s\tflow\t%s\t%s\tafterok:%s\n' "${TASK}" "${WM}" "${SEED}" "${flow_id}" "${af_id}" | tee -a "${RECORD}"
+      supervisor_id=$(sbatch --parsable \
+        --dependency=afterany:${train_id} \
+        --job-name="sup-${TASK}-${WM}-s${SEED}" \
+        --export=ALL,WANDB_MODE=online,WM_EPOCH="${WM_EPOCH}",MAX_EPOCHS="${MAX_EPOCHS}",ACTION_MAX_EPOCHS="${ACTION_MAX_EPOCHS}",NUM_WORKERS="${NUM_WORKERS}",TASK="${TASK}",DATA="${DATA}",WM_VARIANT="${WM}",MODEL="${MODEL_NAME}",OUTPUT_MODEL_NAME="${MODEL_NAME}",SEED="${SEED}",UPSTREAM_JOB_ID="${train_id}",RECORD="${RECORD}" \
+        scripts/slurm_flow_2x2_supervisor.sbatch)
+      printf 'supervisor\t%s\t%s\toriginal\t%s\t%s\tafterany:%s\n' "${TASK}" "${WM}" "${SEED}" "${supervisor_id}" "${train_id}" | tee -a "${RECORD}"
     done
   done
 done

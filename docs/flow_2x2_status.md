@@ -151,6 +151,26 @@ Latest queue check:
     - `9432076`, `sup-cube-flow-s1`, `afterany:9431381`.
   - Supervisor submission record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/flow_2x2_20260604/job_records/supervisor_attach_20260604_190730.tsv`.
   - Validation: `bash -n` passed for all flow Slurm scripts, and `sbatch --test-only` confirmed the supervisor script is schedulable on `cpu-small`.
+- Follow-up repair after preemption:
+  - Jobs `9431376`, `9431380`, and `9431381` were preempted by the cluster after roughly 1 hour. Their logs include `/tmp/pymp-*` multiprocessing `FileNotFoundError` shutdown noise, but `sacct` reports `PREEMPTED` rather than an application OOM or data/config failure.
+  - Supervisors `9432071`, `9432075`, and `9432076` ran and correctly submitted replacement resumable world-model chunks:
+    - `9432169`, `lewm-pusht-original-s1`, pending on H200 priority.
+    - `9432164`, `lewm-cube-original-s1`, running on H200 and resumed from the prior `last.ckpt`.
+    - `9432197`, `lewm-cube-flow-s1`, pending on H200 priority.
+  - A QOS issue was found in the supervisor script: it did not explicitly request `embers`, so completed/pending CPU supervisors inherited the cluster default `inferno`.
+  - Added `#SBATCH --qos=embers` to `scripts/slurm_flow_2x2_supervisor.sbatch`.
+  - Canceled pending inferno supervisors `9432069`, `9432070`, `9432072`, `9432073`, `9432074`, `9432166`, `9432170`, and `9432198`.
+  - Submitted embers replacement supervisors:
+    - `9432333`, `sup-pusht-original-s0`, `afterany:9431374`.
+    - `9432334`, `sup-pusht-flow-s0`, `afterany:9431375`.
+    - `9432335`, `sup-pusht-flow-s1`, `afterany:9431377`.
+    - `9432336`, `sup-cube-original-s0`, `afterany:9431378`.
+    - `9432337`, `sup-cube-flow-s0`, `afterany:9431379`.
+    - `9432338`, `sup-cube-original-s1`, `afterany:9432164`.
+    - `9432339`, `sup-pusht-original-s1`, `afterany:9432169`.
+    - `9432340`, `sup-cube-flow-s1`, `afterany:9432197`.
+  - Replacement supervisor record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/flow_2x2_20260604/job_records/supervisor_embers_replace_20260604_192503.tsv`.
+  - Validation: `bash -n` passed, `sbatch --test-only` confirmed `cpu-small` with `embers`, and `scontrol show job` confirmed replacement supervisors use `QOS=embers`.
 
 ## Notes
 

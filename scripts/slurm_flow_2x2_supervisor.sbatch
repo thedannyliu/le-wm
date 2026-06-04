@@ -1,6 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=lewm-supervisor
 #SBATCH --account=gts-agarg35
+#SBATCH --qos=embers
 #SBATCH --partition=cpu-small
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=2G

@@ -15,6 +15,7 @@ wandb:
     project: lewm-flow-2x2
     group: ${experiment.task}/${experiment.wm_variant}/${experiment.policy_variant}/eval
     name: ${experiment.task}_${experiment.wm_variant}_${experiment.policy_variant}_seed${seed}_eval
+    save_dir: ${oc.env:WANDB_DIR,.}
     tags:
       - flow-2x2
       - eval

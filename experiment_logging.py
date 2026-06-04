@@ -130,6 +130,8 @@ def wandb_init_kwargs(wandb_config):
     except Exception:
         kwargs = OmegaConf.to_container(wandb_config, resolve=False)
     kwargs.pop("log_model", None)
+    if "save_dir" in kwargs and "dir" not in kwargs:
+        kwargs["dir"] = kwargs.pop("save_dir")
     return {
         key: value
         for key, value in kwargs.items()

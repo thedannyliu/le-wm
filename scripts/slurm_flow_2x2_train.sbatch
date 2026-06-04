@@ -71,5 +71,6 @@ fi
   loader.pin_memory=False \
   loader.persistent_workers=False \
   loader.prefetch_factor=1 \
+  hydra.run.dir="${LEWM_RUNTIME_ROOT}/hydra/${SLURM_JOB_ID}/${TASK}_${WM_VARIANT}_seed${SEED}" \
   wandb.enabled=True \
   "${EXTRA_ARGS[@]}"

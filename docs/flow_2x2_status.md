@@ -108,6 +108,17 @@ Latest queue check:
   - World-model jobs request `cpu=8,mem=160G,gres/gpu:h200=1`.
   - No repo-root `wandb/`, `outputs/`, or `multirun/` directories were present after the cleanup.
   - Partial `last.ckpt` files are available for auto-resume for PushT original seed 0/1, PushT flow seed 0/1, and Cube original seed 1.
+- Runtime-output correction:
+  - Jobs `9430990`-`9431021` started and W&B/resume worked, but Lightning `WandbLogger` and Hydra still wrote small `wandb/` and `outputs/` directories in the repo root.
+  - The running jobs were canceled before further runtime output accumulated.
+  - `wandb.config.save_dir` now points at `${WANDB_DIR}`, raw `wandb.init()` calls translate `save_dir` to W&B's `dir`, and Slurm commands set `hydra.run.dir` under `${LEWM_RUNTIME_ROOT}/hydra/...`.
+  - Repo-root `wandb/` and `outputs/` were removed again.
+  - Resubmitted world-model jobs: `9431374`, `9431375`, `9431376`, `9431377`, `9431378`, `9431379`, `9431380`, `9431381`.
+  - Resubmitted action-flow jobs: `9431382`, `9431385`, `9431388`, `9431391`, `9431394`, `9431397`, `9431400`, `9431403`.
+  - Resubmitted CEM eval jobs: `9431383`, `9431386`, `9431389`, `9431392`, `9431395`, `9431398`, `9431401`, `9431404`.
+  - Resubmitted flow eval jobs: `9431384`, `9431387`, `9431390`, `9431393`, `9431396`, `9431399`, `9431402`, `9431405`.
+  - Submission record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/flow_2x2_20260604/job_records/resubmit_20260604_175708.tsv`.
+  - Latest queue check: world-model jobs `9431374`-`9431381` are pending on H200 priority; downstream jobs `9431382`-`9431405` are pending on valid dependencies.
 
 ## Notes
 

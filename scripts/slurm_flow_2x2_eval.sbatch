@@ -43,6 +43,7 @@ COMMON_ARGS=(
   experiment.wm_variant="${WM_VARIANT}"
   experiment.policy_variant="${POLICY_VARIANT}"
   world.max_episode_steps=100
+  hydra.run.dir="${LEWM_RUNTIME_ROOT}/hydra/${SLURM_JOB_ID}/${TASK}_${WM_VARIANT}_${POLICY_VARIANT}_seed${SEED}_eval"
   wandb.enabled=True
 )
 

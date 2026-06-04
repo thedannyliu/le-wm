@@ -13,6 +13,7 @@ wandb:
     name: ${experiment.task}_${experiment.wm_variant}_${experiment.policy_variant}_seed${seed}
     id: ${subdir}
     resume: allow
+    save_dir: ${oc.env:WANDB_DIR,.}
     log_model: False
     tags:
       - flow-2x2

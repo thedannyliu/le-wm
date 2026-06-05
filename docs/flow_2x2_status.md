@@ -283,6 +283,14 @@ Latest queue check:
   - Final `weights_epoch_100.pt` checkpoints are not present yet, so action-flow and real-environment eval jobs have not been submitted by the supervisors.
   - Log sweep still shows old pin-memory failures from the pre-fix jobs and multiprocessing `/tmp/pymp-*` cleanup traces from preempted chunks. The active queue has no current failed job, missing supervisor, dependency failure, CUDA OOM, data/config error, or W&B error.
   - Repo root remains clean: no `wandb/`, `outputs/`, `multirun/`, or `wandb_resume.json`. A HOME scan found only the existing W&B config directory `/storage/home/hcoda1/9/eliu354/.config/wandb`, not training outputs.
+- Health check, 2026-06-05 03:32 EDT:
+  - No new Slurm repair was needed. The current queue still has the same eight world-model jobs pending on `gpu-h200` for priority and the same eight supervisors pending on valid `afterany` dependencies.
+  - `scontrol show job` confirms all current GPU and CPU jobs use `QOS=embers`; no job is using `inferno`.
+  - Current world-model jobs: `9436864`, `9436866`, `9436871`, `9436873`, `9436885`, `9436887`, `9436932`, and `9436934`.
+  - Current supervisors: `9436865`, `9436867`, `9436872`, `9436874`, `9436886`, `9436888`, `9436933`, and `9436935`.
+  - Final checkpoint count remains zero for `weights_epoch_100.pt`; action-flow and real-environment eval outputs are not present yet.
+  - Latest training metrics are unchanged from the 02:32 EDT check because no replacement world-model job has started since then.
+  - Repo root remains clean: no `wandb/`, `outputs/`, `multirun/`, or `wandb_resume.json`.
 
 ## Notes
 

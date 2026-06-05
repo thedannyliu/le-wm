@@ -23,6 +23,7 @@ experiment:
 
 logging:
   jsonl_every_n_steps: 50
+  requeue_checkpoint_every_n_steps: 1000
 
 num_workers: 6
 train_split: 0.9

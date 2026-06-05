@@ -7,6 +7,7 @@ import lightning as pl
 import stable_pretraining as spt
 import stable_worldmodel as swm
 import torch
+from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.callbacks import LearningRateMonitor
 from lightning.pytorch.loggers import WandbLogger
 from omegaconf import OmegaConf, open_dict
@@ -196,6 +197,17 @@ def run(cfg):
             every_n_steps=cfg.get("logging", {}).get("jsonl_every_n_steps", 50),
         ),
     ]
+    step_ckpt_every = cfg.get("logging", {}).get("requeue_checkpoint_every_n_steps", 0)
+    if step_ckpt_every:
+        callbacks.append(
+            ModelCheckpoint(
+                filename="last",
+                save_top_k=-1,
+                every_n_train_steps=int(step_ckpt_every),
+                save_on_train_epoch_end=False,
+                enable_version_counter=False,
+            )
+        )
     if cfg.wandb.enabled:
         callbacks.append(LearningRateMonitor(logging_interval="step"))
 

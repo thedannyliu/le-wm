@@ -291,6 +291,17 @@ Latest queue check:
   - Final checkpoint count remains zero for `weights_epoch_100.pt`; action-flow and real-environment eval outputs are not present yet.
   - Latest training metrics are unchanged from the 02:32 EDT check because no replacement world-model job has started since then.
   - Repo root remains clean: no `wandb/`, `outputs/`, `multirun/`, or `wandb_resume.json`.
+- Queue repair, 2026-06-05 12:06 EDT:
+  - The pending replacement jobs started on H200. At check time, seven world-model chunks were running and one replacement was pending:
+    - Running: `9442757` PushT flow seed 1, `9442771` Cube original seed 1, `9442773` Cube flow seed 0, `9445127` PushT original seed 0, `9446407` Cube flow seed 1, `9446415` PushT flow seed 0, and `9446424` PushT original seed 1.
+    - `9436934`, Cube original seed 0, was preempted after 1:00:34. Supervisor `9436935` completed and submitted `9448176` plus supervisor `9448177`; both use `QOS=embers` and valid dependency wiring.
+  - Active log sweep found no current `RuntimeError`, CUDA OOM, W&B error, missing data/config error, or dependency failure in the running jobs. The `9436934` trace is multiprocessing cleanup noise after Slurm preemption; `sacct` reports `PREEMPTED`.
+  - A resume-efficiency issue was found: Cube jobs that have not finished epoch 0 have no stable-pretraining `last.ckpt`, so a preempt before the first epoch checkpoint restarts those chunks from scratch. PushT jobs with existing `last.ckpt` resumed correctly.
+  - Added step-level Lightning requeue checkpointing in `train.py`: `ModelCheckpoint(filename="last", every_n_train_steps=1000, save_top_k=-1, save_on_train_epoch_end=False)`, configured by `logging.requeue_checkpoint_every_n_steps: 1000`.
+  - This patch affects future chunks launched after the code change; currently running jobs were not canceled, to avoid throwing away their in-flight progress.
+  - Validation: `.conda/lewm-flow-2x2/bin/python` successfully imported `train.py`, and Hydra composition confirmed `logging.requeue_checkpoint_every_n_steps=1000`.
+  - Final checkpoint count remains zero for `weights_epoch_100.pt`; action-flow and real-environment eval outputs are not present yet.
+  - Repo root remains clean: no `wandb/`, `outputs/`, `multirun/`, or `wandb_resume.json`.
 
 ## Notes
 

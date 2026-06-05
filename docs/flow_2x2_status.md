@@ -259,6 +259,30 @@ Latest queue check:
     - `9434359`, `sup-cube-original-s0`, `afterany:9434358`.
   - Metrics files and W&B runs are expected to be stale until the pending H200 jobs start again. The latest logs before preemption did not show a new `RuntimeError`, `Traceback`, missing-file error, pin-memory failure, CUDA OOM, or dependency failure.
   - Repo root remains clean: no `wandb/`, `outputs/`, `multirun/`, or `wandb_resume.json` was present after the repair.
+- Queue repair, 2026-06-05 02:32 EDT:
+  - Another cluster preemption wave stopped the prior H200 world-model chunks. `sacct` reports `PREEMPTED` for the affected GPU jobs, while the corresponding `embers` supervisors completed and submitted the next resumable chunks.
+  - Completed supervisors submitted the following replacements:
+    - `9436864`, PushT flow seed 1; supervisor `9436865`, `afterany:9436864`.
+    - `9436866`, Cube original seed 1; supervisor `9436867`, `afterany:9436866`.
+    - `9436871`, Cube flow seed 0; supervisor `9436872`, `afterany:9436871`.
+    - `9436873`, PushT original seed 0; supervisor `9436874`, `afterany:9436873`.
+    - `9436885`, Cube flow seed 1; supervisor `9436886`, `afterany:9436885`.
+    - `9436887`, PushT flow seed 0; supervisor `9436888`, `afterany:9436887`.
+    - `9436932`, PushT original seed 1; supervisor `9436933`, `afterany:9436932`.
+    - `9436934`, Cube original seed 0; supervisor `9436935`, `afterany:9436934`.
+  - Current queue is complete: all eight world-model jobs are pending on `gpu-h200` for priority, and all eight supervisors are pending on valid dependencies. `scontrol show job` confirms `QOS=embers` for all current GPU and CPU jobs.
+  - No replacement job is currently running, so metrics are expected to be stale until H200 capacity is assigned again. Latest recorded training progress:
+    - PushT original seed 0: epoch 2, global step 38350.
+    - PushT original seed 1: epoch 1, global step 23850.
+    - PushT flow seed 0: epoch 3, global step 52400.
+    - PushT flow seed 1: epoch 2, global step 38400.
+    - Cube original seed 0: epoch 0, global step 6850.
+    - Cube original seed 1: epoch 1, global step 19500.
+    - Cube flow seed 0: epoch 0, global step 6200.
+    - Cube flow seed 1: epoch 0, global step 6600.
+  - Final `weights_epoch_100.pt` checkpoints are not present yet, so action-flow and real-environment eval jobs have not been submitted by the supervisors.
+  - Log sweep still shows old pin-memory failures from the pre-fix jobs and multiprocessing `/tmp/pymp-*` cleanup traces from preempted chunks. The active queue has no current failed job, missing supervisor, dependency failure, CUDA OOM, data/config error, or W&B error.
+  - Repo root remains clean: no `wandb/`, `outputs/`, `multirun/`, or `wandb_resume.json`. A HOME scan found only the existing W&B config directory `/storage/home/hcoda1/9/eliu354/.config/wandb`, not training outputs.
 
 ## Notes
 

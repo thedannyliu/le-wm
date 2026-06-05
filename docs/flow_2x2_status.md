@@ -226,6 +226,39 @@ Latest queue check:
   - Validation: `bash -n` passed for all Slurm scripts, `sbatch --test-only` passed for the patched train entrypoint, and a runtime-CWD import smoke loaded `train`, `train_action_flow`, and `eval`.
   - Active log sweep found no new `RuntimeError`, `Traceback`, missing-file error, pin-memory failure, CUDA OOM, or dependency failure in the running jobs.
   - Current running jobs are `9431377`, `9432164`, `9432197`, `9432486`, `9432921`, and `9432951`; patched replacements `9433162` and `9433164` are pending on H200 priority.
+- Queue repair, 2026-06-04 23:02 EDT:
+  - The remaining active world-model chunks were preempted by the cluster, not by an application error:
+    - `9431377`, PushT flow seed 1, preempted after 3:30:12.
+    - `9432164`, Cube original seed 1, preempted after 2:00:45.
+    - `9432197`, Cube flow seed 1, preempted after 2:20:36.
+    - `9432486`, Cube flow seed 0, preempted after 2:59:08.
+    - `9432921`, PushT original seed 1, preempted after 1:47:05.
+    - `9432951`, PushT original seed 0, preempted after 1:40:22.
+    - `9433162`, PushT flow seed 0, preempted after 1:06:11.
+    - `9433164`, Cube original seed 0, preempted after 1:00:56.
+  - Supervisors resubmitted resumable world-model chunks for all variants, but `9432338`, `sup-cube-original-s1`, failed after submitting replacement GPU job `9433204` because its attempt to submit the next supervisor hit `QOSMaxSubmitJobPerUserLimit`.
+  - Manually submitted the missing replacement supervisor `9435928`, `sup-cube-original-s1`, with `QOS=embers` and `afterany:9433204`.
+  - Manual repair record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/flow_2x2_20260604/job_records/missing_supervisor_20260604_230048.tsv`.
+  - Current world-model queue is complete and pending on H200 priority:
+    - `9433204`, Cube original seed 1.
+    - `9433301`, PushT flow seed 1.
+    - `9433455`, Cube flow seed 1.
+    - `9434238`, PushT flow seed 0.
+    - `9434239`, PushT original seed 0.
+    - `9434240`, Cube flow seed 0.
+    - `9434244`, PushT original seed 1.
+    - `9434358`, Cube original seed 0.
+  - Current supervisor queue is complete, uses `QOS=embers`, and has valid `afterany` dependencies:
+    - `9435928`, `sup-cube-original-s1`, `afterany:9433204`.
+    - `9433302`, `sup-pusht-flow-s1`, `afterany:9433301`.
+    - `9433456`, `sup-cube-flow-s1`, `afterany:9433455`.
+    - `9434242`, `sup-pusht-flow-s0`, `afterany:9434238`.
+    - `9434241`, `sup-pusht-original-s0`, `afterany:9434239`.
+    - `9434243`, `sup-cube-flow-s0`, `afterany:9434240`.
+    - `9434245`, `sup-pusht-original-s1`, `afterany:9434244`.
+    - `9434359`, `sup-cube-original-s0`, `afterany:9434358`.
+  - Metrics files and W&B runs are expected to be stale until the pending H200 jobs start again. The latest logs before preemption did not show a new `RuntimeError`, `Traceback`, missing-file error, pin-memory failure, CUDA OOM, or dependency failure.
+  - Repo root remains clean: no `wandb/`, `outputs/`, `multirun/`, or `wandb_resume.json` was present after the repair.
 
 ## Notes
 

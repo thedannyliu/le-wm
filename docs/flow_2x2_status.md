@@ -189,6 +189,21 @@ Latest queue check:
   - All eight training `metrics.jsonl` files continue to update.
   - Repo root still has no `wandb/`, `outputs/`, or `multirun` directories.
   - W&B and Hydra runtime directories remain under `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/runtime`.
+- Follow-up health check:
+  - No additional world-model jobs failed or required repair.
+  - Current active world-model jobs remain running:
+    - `9431374`, PushT original seed 0, epoch 1/100.
+    - `9431375`, PushT flow seed 0, epoch 2/100.
+    - `9431377`, PushT flow seed 1, epoch 1/100.
+    - `9431378`, Cube original seed 0, epoch 0/100.
+    - `9432164`, Cube original seed 1 replacement, epoch 1/100.
+    - `9432169`, PushT original seed 1 replacement, epoch 1/100.
+    - `9432197`, Cube flow seed 1 replacement, epoch 0/100.
+    - `9432486`, Cube flow seed 0 replacement, epoch 0/100.
+  - Pending supervisors `9432333`, `9432334`, `9432335`, `9432336`, `9432338`, `9432339`, `9432340`, and `9432487` all use `QOS=embers` and have valid `afterany` dependencies.
+  - Active log sweep found no new `RuntimeError`, `Traceback`, missing-file error, pin-memory failure, CUDA OOM, or dependency failure.
+  - All eight training `metrics.jsonl` files continue to update.
+  - Repo root still has no `wandb/`, `outputs/`, or `multirun` directories.
 
 ## Notes
 

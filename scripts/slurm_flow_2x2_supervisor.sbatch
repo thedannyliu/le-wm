@@ -32,6 +32,7 @@ ACTION_MAX_EPOCHS="${ACTION_MAX_EPOCHS:-20}"
 NUM_WORKERS="${NUM_WORKERS:-6}"
 WANDB_MODE="${WANDB_MODE:-online}"
 UPSTREAM_JOB_ID="${UPSTREAM_JOB_ID:-}"
+SUBDIR="${SUBDIR:-}"
 RECORD="${RECORD:-${LEWM_EXPERIMENT_ROOT}/job_records/supervisor_$(date +%Y%m%d).tsv}"
 
 if [ "${TASK}" = "pusht" ]; then
@@ -110,7 +111,7 @@ else
     --job-name="lewm-${TASK}-${WM_VARIANT}-s${SEED}" \
     --output="${LEWM_EXPERIMENT_ROOT}/slurm/%x-%j.out" \
     --error="${LEWM_EXPERIMENT_ROOT}/slurm/%x-%j.err" \
-    --export=ALL,WANDB_MODE="${WANDB_MODE}",LEWM_EXPERIMENT_ROOT="${LEWM_EXPERIMENT_ROOT}",MAX_EPOCHS="${MAX_EPOCHS}",NUM_WORKERS="${NUM_WORKERS}",RESUME_AUTO=True,TASK="${TASK}",DATA="${DATA}",WM_VARIANT="${WM_VARIANT}",MODEL="${MODEL}",OUTPUT_MODEL_NAME="${OUTPUT_MODEL_NAME}",SEED="${SEED}" \
+    --export=ALL,WANDB_MODE="${WANDB_MODE}",LEWM_EXPERIMENT_ROOT="${LEWM_EXPERIMENT_ROOT}",MAX_EPOCHS="${MAX_EPOCHS}",NUM_WORKERS="${NUM_WORKERS}",RESUME_AUTO=True,SUBDIR="${SUBDIR}",TASK="${TASK}",DATA="${DATA}",WM_VARIANT="${WM_VARIANT}",MODEL="${MODEL}",OUTPUT_MODEL_NAME="${OUTPUT_MODEL_NAME}",SEED="${SEED}" \
     scripts/slurm_flow_2x2_train.sbatch)
   log_record "world_model" "original" "${train_id}" "" "resume_until_epoch_${WM_EPOCH}"
 
@@ -119,7 +120,7 @@ else
     --job-name="sup-${TASK}-${WM_VARIANT}-s${SEED}" \
     --output="${LEWM_EXPERIMENT_ROOT}/slurm/%x-%j.out" \
     --error="${LEWM_EXPERIMENT_ROOT}/slurm/%x-%j.err" \
-    --export=ALL,WANDB_MODE="${WANDB_MODE}",LEWM_EXPERIMENT_ROOT="${LEWM_EXPERIMENT_ROOT}",WM_EPOCH="${WM_EPOCH}",MAX_EPOCHS="${MAX_EPOCHS}",ACTION_MAX_EPOCHS="${ACTION_MAX_EPOCHS}",NUM_WORKERS="${NUM_WORKERS}",TASK="${TASK}",DATA="${DATA}",WM_VARIANT="${WM_VARIANT}",MODEL="${MODEL}",OUTPUT_MODEL_NAME="${OUTPUT_MODEL_NAME}",SEED="${SEED}",UPSTREAM_JOB_ID="${train_id}",RECORD="${RECORD}" \
+    --export=ALL,WANDB_MODE="${WANDB_MODE}",LEWM_EXPERIMENT_ROOT="${LEWM_EXPERIMENT_ROOT}",WM_EPOCH="${WM_EPOCH}",MAX_EPOCHS="${MAX_EPOCHS}",ACTION_MAX_EPOCHS="${ACTION_MAX_EPOCHS}",NUM_WORKERS="${NUM_WORKERS}",SUBDIR="${SUBDIR}",TASK="${TASK}",DATA="${DATA}",WM_VARIANT="${WM_VARIANT}",MODEL="${MODEL}",OUTPUT_MODEL_NAME="${OUTPUT_MODEL_NAME}",SEED="${SEED}",UPSTREAM_JOB_ID="${train_id}",RECORD="${RECORD}" \
     scripts/slurm_flow_2x2_supervisor.sbatch)
   log_record "supervisor" "original" "${supervisor_id}" "afterany:${train_id}" "watch_resume_chunk"
 fi

@@ -22,6 +22,7 @@ export WANDB_PROJECT=${WANDB_PROJECT:-lewm-flow-2x2}
 export MAX_EPOCHS=${MAX_EPOCHS:-100}
 export NUM_WORKERS=${NUM_WORKERS:-6}
 export RESUME_AUTO=${RESUME_AUTO:-True}
+export SUBDIR=${SUBDIR:-}
 
 mkdir -p "${LEWM_EXPERIMENT_ROOT}/slurm" "${LEWM_JOB_WORKDIR}"
 export PYTHONPATH="${REPO}${PYTHONPATH:+:${PYTHONPATH}}"
@@ -44,7 +45,7 @@ PY
 echo "Python/Torch: ${python_info}"
 echo "Task=${TASK} Data=${DATA} WM=${WM_VARIANT} Model=${MODEL} Seed=${SEED}"
 echo "WANDB_MODE=${WANDB_MODE}"
-echo "MAX_EPOCHS=${MAX_EPOCHS} NUM_WORKERS=${NUM_WORKERS} RESUME_AUTO=${RESUME_AUTO}"
+echo "MAX_EPOCHS=${MAX_EPOCHS} NUM_WORKERS=${NUM_WORKERS} RESUME_AUTO=${RESUME_AUTO} SUBDIR=${SUBDIR}"
 echo "Runtime root=${LEWM_RUNTIME_ROOT}"
 
 EXTRA_ARGS=()
@@ -62,7 +63,7 @@ fi
   experiment.wm_variant="${WM_VARIANT}" \
   experiment.policy_variant=original \
   output_model_name="${OUTPUT_MODEL_NAME}" \
-  subdir="${TASK}_${WM_VARIANT}_seed${SEED}" \
+  subdir="${SUBDIR:-${TASK}_${WM_VARIANT}_seed${SEED}}" \
   trainer.accelerator=gpu \
   trainer.devices=1 \
   trainer.precision=bf16 \

@@ -367,6 +367,28 @@ Latest queue check:
   - Submission record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_native_formal_20260605/job_records/submit_20260605_152119.tsv`.
   - Validation: shell syntax passed for submit/train/supervisor/action/eval scripts; `sbatch --test-only` passed for H100, A100, and L40S formal train submissions; `scontrol show job` confirmed `QOS=embers`, expected partitions, GPU types, CPU/memory requests, and dependencies.
   - Repo root remains clean: no `wandb/`, `outputs/`, `multirun/`, or `wandb_resume.json`.
+- PushT repair, 2026-06-05 16:50 EDT:
+  - Lance conversion `9456102` completed successfully after 20:07.
+  - The first A100/L40S speed sanity jobs failed before training because the script used `checkpoint_run_name=...` against Hydra strict config. Fixed the override to `+checkpoint_run_name=...`.
+  - Canceled the still-pending first H100 speed sanity job `9456103`, then resubmitted retry speed sanity jobs with separate output roots and W&B labels:
+    - `9464427`, `lewm-pusht-h100-speed-r1`, `gpu-h100`, `QOS=embers`, pending on priority.
+    - `9464428`, `lewm-pusht-a100-speed-r1`, `gpu-a100`, `QOS=embers`, pending on priority.
+    - `9464429`, `lewm-pusht-l40s-speed-r1`, `gpu-l40s`, `QOS=embers`, pending on priority with `4 CPU`, `120G`, and `NUM_WORKERS=4`.
+  - The formal L40S seed 2 job `9456790` started and is training normally:
+    - Latest observed progress: epoch 0, global step 4100 of 13933, about 4.6 it/s.
+    - `metrics.jsonl` is updating under the PushT formal output root.
+    - Step-level `last.ckpt` files have been written at 1000, 2000, and 3000 steps under the project-storage experiment root.
+    - W&B is online and writes local run data under `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/runtime/wandb`.
+  - Found a W&B run-id collision risk for the pending formal seed 0/1 jobs because `subdir` defaulted to `pusht_original_seed0` and `pusht_original_seed1`, which were also used by the earlier formal attempts.
+  - Added `SUBDIR` support to `scripts/slurm_flow_2x2_train.sbatch`, propagated it through the supervisor, and updated `scripts/submit_pusht_native_formal.sh` so future formal submissions use unique W&B ids such as `pusht_native_formal_20260605_h100_seed0`.
+  - Canceled pending pre-fix formal jobs and supervisors `9456786`, `9456787`, `9456788`, and `9456789`.
+  - Resubmitted formal seed 0/1 with unique `SUBDIR` values:
+    - `9464470`, seed 0, `lewm-pusht-native-h100-s0-r1`, `gpu-h100`, `QOS=embers`, pending on priority.
+    - `9464471`, supervisor for `9464470`, `QOS=embers`, dependency `afterany:9464470`.
+    - `9464472`, seed 1, `lewm-pusht-native-a100-s1-r1`, `gpu-a100`, `QOS=embers`, pending on priority.
+    - `9464473`, supervisor for `9464472`, `QOS=embers`, dependency `afterany:9464472`.
+  - Active queue now has one running formal job (`9456790`), two pending formal jobs (`9464470`, `9464472`), three pending speed sanity retries (`9464427`, `9464428`, `9464429`), and three valid formal supervisors (`9456791`, `9464471`, `9464473`).
+  - Repo root remains clean: no `wandb/`, `outputs/`, `multirun/`, or `wandb_resume.json`.
 
 ## Notes
 

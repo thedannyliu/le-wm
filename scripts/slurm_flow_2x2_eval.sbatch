@@ -2,8 +2,8 @@
 #SBATCH --job-name=lewm-eval
 #SBATCH --account=gts-agarg35
 #SBATCH --qos=embers
-#SBATCH --partition=gpu-h200
-#SBATCH --gres=gpu:h200:1
+#SBATCH --partition=gpu-h100
+#SBATCH --gres=gpu:h100:1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=160G
 #SBATCH --time=08:00:00

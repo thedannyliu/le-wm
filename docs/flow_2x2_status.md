@@ -333,6 +333,23 @@ Latest queue check:
     - Cube flow seed 1: epoch 0, global step 9000.
   - Final checkpoint count remains zero for `weights_epoch_100.pt`; action-flow and real-environment eval outputs are not present yet.
   - Repo root remains clean: no `wandb/`, `outputs/`, `multirun/`, or `wandb_resume.json`.
+- Scope reset, 2026-06-05 15:22 EDT:
+  - User narrowed the active run scope to PushT only. OGB/Cube and the formal flow 2x2 queue are deferred until after the PushT speed sanity check.
+  - Canceled the stale H200 formal queue and replacement supervisors so no old PushT/Cube 2x2 jobs remain active:
+    - `9448176`, `9448177`, `9448680`, `9448681`, `9448686`, `9448687`, `9448697`, `9448698`, `9450886`, `9450887`, `9450903`, `9450905`, `9450904`, `9450906`, `9450920`, `9450921`, `9455507`, `9455509`, `9455414`, and `9455416`.
+  - Restored the PushT data config to the official Lance dataset name: `pusht_expert_train.lance`.
+  - Added a CPU conversion job for the local HDF5 data:
+    - `9456102`, `lewm-pusht-lance`, `cpu-small`, `QOS=embers`, converting `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/datasets/pusht_expert_train.h5` to `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/datasets/pusht_expert_train.lance`.
+  - Restored faster dataloader defaults for future Slurm training/action-flow jobs: `loader.num_workers=6`, `loader.pin_memory=True`, `loader.persistent_workers=True`, and `loader.prefetch_factor=3`.
+  - Switched future formal Slurm train/action-flow/eval entrypoints from `gpu-h200` to `gpu-h100` by default, while keeping `QOS=embers`.
+  - Submitted official native LeWM PushT one-epoch speed sanity jobs with distinct output roots and W&B names:
+    - `9456103`, `lewm-pusht-h100-speed`, `gpu-h100`, dependency `afterok:9456102`, output root `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_h100_speed_20260605`.
+    - `9456323`, `lewm-pusht-a100-speed`, `gpu-a100`, dependency `afterok:9456102`, output root `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_a100_speed_20260605`.
+    - `9456362`, `lewm-pusht-l40s-speed`, `gpu-l40s`, dependency `afterok:9456102`, output root `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_l40s_speed_20260605`.
+  - The speed sanity command follows the native LeWM path: `train.py data=pusht model=lewm`, `trainer.max_epochs=1`, online W&B logging, and project-storage Hydra/W&B/runtime directories.
+  - Submission record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_h100_speed_20260605/job_records/pusht_h100_speed_20260605_151226.tsv`.
+  - Latest queue state: Lance conversion `9456102` is running; H100/A100/L40S speed sanity jobs are pending on `afterok:9456102`.
+  - Repo root remains clean: no `wandb/`, `outputs/`, `multirun/`, or `wandb_resume.json`.
 
 ## Notes
 

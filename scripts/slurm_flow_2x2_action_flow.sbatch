@@ -2,8 +2,8 @@
 #SBATCH --job-name=lewm-action-flow
 #SBATCH --account=gts-agarg35
 #SBATCH --qos=embers
-#SBATCH --partition=gpu-h200
-#SBATCH --gres=gpu:h200:1
+#SBATCH --partition=gpu-h100
+#SBATCH --gres=gpu:h100:1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=160G
 #SBATCH --time=08:00:00
@@ -20,7 +20,7 @@ export PYTHONNOUSERSITE=1
 export WANDB_MODE=${WANDB_MODE:-online}
 export WANDB_PROJECT=${WANDB_PROJECT:-lewm-flow-2x2}
 export ACTION_MAX_EPOCHS=${ACTION_MAX_EPOCHS:-20}
-export NUM_WORKERS=${NUM_WORKERS:-2}
+export NUM_WORKERS=${NUM_WORKERS:-6}
 
 mkdir -p "${LEWM_EXPERIMENT_ROOT}/slurm" "${LEWM_JOB_WORKDIR}"
 export PYTHONPATH="${REPO}${PYTHONPATH:+:${PYTHONPATH}}"
@@ -57,9 +57,9 @@ fi
   device=cuda \
   trainer.max_epochs="${ACTION_MAX_EPOCHS}" \
   loader.num_workers="${NUM_WORKERS}" \
-  loader.pin_memory=False \
-  loader.persistent_workers=False \
-  loader.prefetch_factor=1 \
+  loader.pin_memory=True \
+  loader.persistent_workers=True \
+  loader.prefetch_factor=3 \
   hydra.run.dir="${LEWM_RUNTIME_ROOT}/hydra/${SLURM_JOB_ID}/${TASK}_${WM_VARIANT}_seed${SEED}_action_flow" \
   wandb.enabled=True \
   "${EXTRA_ARGS[@]}"

@@ -389,6 +389,23 @@ Latest queue check:
     - `9464473`, supervisor for `9464472`, `QOS=embers`, dependency `afterany:9464472`.
   - Active queue now has one running formal job (`9456790`), two pending formal jobs (`9464470`, `9464472`), three pending speed sanity retries (`9464427`, `9464428`, `9464429`), and three valid formal supervisors (`9456791`, `9464471`, `9464473`).
   - Repo root remains clean: no `wandb/`, `outputs/`, `multirun/`, or `wandb_resume.json`.
+- PushT health check, 2026-06-05 19:50 EDT:
+  - Speed sanity retry `9464429` on L40S completed successfully in 58:14 with `QOS=embers`.
+    - One epoch processed 13933 steps at about 4.59 it/s.
+    - Final train metrics included `fit/loss=0.1710` and `fit/pred_loss=0.03136`.
+    - Final validation metrics included `validate/loss=0.2036` and `validate/pred_loss=0.02707`.
+    - Checkpoint written: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_l40s_speed_retry1_20260605/checkpoints/pusht/l40s_retry1_speed/seed_0/lewm/weights_epoch_1.pt`.
+  - Formal L40S seed 2 job `9456790` remains running and healthy after about 3:19 runtime.
+    - Latest observed progress: epoch 3, global step about 50550, about 4.6 it/s.
+    - Latest metrics show `validate/loss=0.1463`, `validate/pred_loss=0.01146`, and train-step `fit/loss` around `0.09`-`0.11`.
+    - Epoch checkpoints written so far: `weights_epoch_1.pt`, `weights_epoch_2.pt`, and `weights_epoch_3.pt`.
+    - Step-level `last.ckpt` continues to update under the project-storage formal run directory.
+  - Pending jobs remain valid and are waiting on priority, not failed dependencies:
+    - Speed sanity retries: `9464427` on H100 and `9464428` on A100.
+    - Formal jobs: `9464470` on H100 seed 0 and `9464472` on A100 seed 1.
+    - Supervisors: `9456791`, `9464471`, and `9464473`, each pending on the matching train job with `afterany`.
+  - Log sweep found no new `RuntimeError`, `Traceback`, CUDA OOM, Hydra override error, missing-file error, dependency failure, pin-memory failure, or W&B error in current PushT formal/sanity logs.
+  - Repo root remains clean: no `wandb/`, `outputs/`, `multirun/`, or `wandb_resume.json`.
 
 ## Notes
 

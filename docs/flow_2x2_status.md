@@ -204,6 +204,28 @@ Latest queue check:
   - Active log sweep found no new `RuntimeError`, `Traceback`, missing-file error, pin-memory failure, CUDA OOM, or dependency failure.
   - All eight training `metrics.jsonl` files continue to update.
   - Repo root still has no `wandb/`, `outputs/`, or `multirun` directories.
+- Workdir sidecar repair:
+  - Additional preemptions occurred:
+    - `9431374`, PushT original seed 0, preempted after roughly 2.8 hours.
+    - `9431375`, PushT flow seed 0, preempted after roughly 3.0 hours.
+    - `9431378`, Cube original seed 0, preempted after roughly 3.0 hours.
+    - `9432169`, PushT original seed 1 replacement, preempted after roughly 1.0 hour.
+  - Embers supervisors correctly submitted resumable replacements:
+    - `9432951`, PushT original seed 0, running; `9432952`, supervisor pending on `afterany:9432951`.
+    - `9432921`, PushT original seed 1, running; `9432922`, supervisor pending on `afterany:9432921`.
+    - `9433089`, PushT flow seed 0, pending; `9433091`, supervisor pending on `afterany:9433089`.
+    - `9433149`, Cube original seed 0, pending; `9433150`, supervisor pending on `afterany:9433149`.
+  - A new repo-root sidecar `wandb_resume.json` appeared. It is written by `stable_pretraining`'s W&B checkpoint callback when the job CWD is the repo, so future Slurm GPU jobs now run from `${LEWM_RUNTIME_ROOT}/workdirs/${SLURM_JOB_ID}` while executing repo scripts by absolute path with `PYTHONPATH=${REPO}`.
+  - Updated `scripts/slurm_runtime_env.sh`, `scripts/slurm_flow_2x2_train.sbatch`, `scripts/slurm_flow_2x2_action_flow.sbatch`, and `scripts/slurm_flow_2x2_eval.sbatch` to route the process CWD to project runtime.
+  - Removed the repo-root `wandb_resume.json` residue.
+  - Canceled pending pre-patch jobs `9433089`, `9433091`, `9433149`, and `9433150`, because Slurm had already captured their old repo-CWD scripts.
+  - Resubmitted patched workdir replacements:
+    - `9433162`, PushT flow seed 0, pending on H200 priority; `9433163`, supervisor pending on `afterany:9433162`.
+    - `9433164`, Cube original seed 0, pending on H200 priority; `9433165`, supervisor pending on `afterany:9433164`.
+  - Replacement record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/flow_2x2_20260604/job_records/workdir_patch_resubmit_20260604_211729.tsv`.
+  - Validation: `bash -n` passed for all Slurm scripts, `sbatch --test-only` passed for the patched train entrypoint, and a runtime-CWD import smoke loaded `train`, `train_action_flow`, and `eval`.
+  - Active log sweep found no new `RuntimeError`, `Traceback`, missing-file error, pin-memory failure, CUDA OOM, or dependency failure in the running jobs.
+  - Current running jobs are `9431377`, `9432164`, `9432197`, `9432486`, `9432921`, and `9432951`; patched replacements `9433162` and `9433164` are pending on H200 priority.
 
 ## Notes
 

@@ -22,8 +22,9 @@ export WANDB_PROJECT=${WANDB_PROJECT:-lewm-flow-2x2}
 export ACTION_MAX_EPOCHS=${ACTION_MAX_EPOCHS:-20}
 export NUM_WORKERS=${NUM_WORKERS:-2}
 
-mkdir -p "${LEWM_EXPERIMENT_ROOT}/slurm"
-cd "${REPO}"
+mkdir -p "${LEWM_EXPERIMENT_ROOT}/slurm" "${LEWM_JOB_WORKDIR}"
+export PYTHONPATH="${REPO}${PYTHONPATH:+:${PYTHONPATH}}"
+cd "${LEWM_JOB_WORKDIR}"
 
 PY="${REPO}/.conda/lewm-flow-2x2/bin/python"
 
@@ -43,7 +44,7 @@ if [ "${TASK}" = "cube" ]; then
   EXTRA_ARGS+=(data.dataset.name="${STABLEWM_HOME}/ogbench/cube_single_expert.h5")
 fi
 
-"${PY}" train_action_flow.py \
+"${PY}" "${REPO}/train_action_flow.py" \
   data="${DATA}" \
   seed="${SEED}" \
   cache_dir="${STABLEWM_HOME}" \

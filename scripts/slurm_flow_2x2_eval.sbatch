@@ -20,8 +20,9 @@ export PYTHONNOUSERSITE=1
 export WANDB_MODE=${WANDB_MODE:-online}
 export WANDB_PROJECT=${WANDB_PROJECT:-lewm-flow-2x2}
 
-mkdir -p "${LEWM_EXPERIMENT_ROOT}/slurm"
-cd "${REPO}"
+mkdir -p "${LEWM_EXPERIMENT_ROOT}/slurm" "${LEWM_JOB_WORKDIR}"
+export PYTHONPATH="${REPO}${PYTHONPATH:+:${PYTHONPATH}}"
+cd "${LEWM_JOB_WORKDIR}"
 
 PY="${REPO}/.conda/lewm-flow-2x2/bin/python"
 
@@ -53,10 +54,10 @@ fi
 
 if [ "${POLICY_VARIANT}" = "flow" ]; then
   : "${ACTION_MODEL_PATH:?ACTION_MODEL_PATH is required for flow policy eval}"
-  "${PY}" eval.py "${COMMON_ARGS[@]}" \
+  "${PY}" "${REPO}/eval.py" "${COMMON_ARGS[@]}" \
     solver=flow \
     solver.action_model_path="${ACTION_MODEL_PATH}" \
     solver.action_model_cache_dir=/
 else
-  "${PY}" eval.py "${COMMON_ARGS[@]}" solver=cem
+  "${PY}" "${REPO}/eval.py" "${COMMON_ARGS[@]}" solver=cem
 fi

@@ -23,8 +23,9 @@ export MAX_EPOCHS=${MAX_EPOCHS:-100}
 export NUM_WORKERS=${NUM_WORKERS:-2}
 export RESUME_AUTO=${RESUME_AUTO:-True}
 
-mkdir -p "${LEWM_EXPERIMENT_ROOT}/slurm"
-cd "${REPO}"
+mkdir -p "${LEWM_EXPERIMENT_ROOT}/slurm" "${LEWM_JOB_WORKDIR}"
+export PYTHONPATH="${REPO}${PYTHONPATH:+:${PYTHONPATH}}"
+cd "${LEWM_JOB_WORKDIR}"
 
 PY="${REPO}/.conda/lewm-flow-2x2/bin/python"
 
@@ -51,7 +52,7 @@ if [ "${TASK}" = "cube" ]; then
   EXTRA_ARGS+=(data.dataset.name="${STABLEWM_HOME}/ogbench/cube_single_expert.h5")
 fi
 
-"${PY}" train.py \
+"${PY}" "${REPO}/train.py" \
   data="${DATA}" \
   model="${MODEL}" \
   seed="${SEED}" \

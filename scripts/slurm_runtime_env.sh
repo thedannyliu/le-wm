@@ -13,6 +13,7 @@ export WANDB_DIR=${WANDB_DIR:-${LEWM_RUNTIME_ROOT}/wandb}
 export WANDB_CACHE_DIR=${WANDB_CACHE_DIR:-${LEWM_RUNTIME_ROOT}/wandb_cache}
 export WANDB_CONFIG_DIR=${WANDB_CONFIG_DIR:-${LEWM_RUNTIME_ROOT}/wandb_config}
 export TMPDIR=${TMPDIR:-${LEWM_RUNTIME_ROOT}/tmp/${SLURM_JOB_ID:-manual}}
+export LEWM_JOB_WORKDIR=${LEWM_JOB_WORKDIR:-${LEWM_RUNTIME_ROOT}/workdirs/${SLURM_JOB_ID:-manual}}
 
 mkdir -p \
   "${XDG_CACHE_HOME}" \
@@ -23,4 +24,5 @@ mkdir -p \
   "${WANDB_DIR}" \
   "${WANDB_CACHE_DIR}" \
   "${WANDB_CONFIG_DIR}" \
-  "${TMPDIR}"
+  "${TMPDIR}" \
+  "${LEWM_JOB_WORKDIR}"

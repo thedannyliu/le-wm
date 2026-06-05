@@ -350,6 +350,23 @@ Latest queue check:
   - Submission record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_h100_speed_20260605/job_records/pusht_h100_speed_20260605_151226.tsv`.
   - Latest queue state: Lance conversion `9456102` is running; H100/A100/L40S speed sanity jobs are pending on `afterok:9456102`.
   - Repo root remains clean: no `wandb/`, `outputs/`, `multirun/`, or `wandb_resume.json`.
+- Formal PushT native submission, 2026-06-05 15:25 EDT:
+  - Submitted PushT-only native LeWM formal world-model training via `scripts/submit_pusht_native_formal.sh`.
+  - The formal command path is still the official native route: `train.py data=pusht model=lewm`, `trainer.max_epochs=100`, online W&B, Lance data, and project-storage runtime directories.
+  - Jobs are dependency-gated on Lance conversion `afterok:9456102` so training does not read a partially converted dataset.
+  - Formal world-model jobs:
+    - `9456786`, seed 0, `gpu-h100`, `QOS=embers`, `8 CPU`, `160G`, dependency `afterok:9456102`.
+    - `9456788`, seed 1, `gpu-a100`, `QOS=embers`, `8 CPU`, `160G`, dependency `afterok:9456102`.
+    - `9456790`, seed 2, `gpu-l40s`, `QOS=embers`, `4 CPU`, `120G`, dependency `afterok:9456102`.
+  - Continuation supervisors:
+    - `9456787`, watches `9456786` with `afterany`.
+    - `9456789`, watches `9456788` with `afterany`.
+    - `9456791`, watches `9456790` with `afterany`.
+  - Supervisors inherit the formal output root and will submit resumable replacement chunks with `resume.auto=True` until `weights_epoch_100.pt` exists, then submit action-flow, CEM real-environment eval, and flow-policy real-environment eval for the completed PushT native world model.
+  - Formal output root: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_native_formal_20260605`.
+  - Submission record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_native_formal_20260605/job_records/submit_20260605_152119.tsv`.
+  - Validation: shell syntax passed for submit/train/supervisor/action/eval scripts; `sbatch --test-only` passed for H100, A100, and L40S formal train submissions; `scontrol show job` confirmed `QOS=embers`, expected partitions, GPU types, CPU/memory requests, and dependencies.
+  - Repo root remains clean: no `wandb/`, `outputs/`, `multirun/`, or `wandb_resume.json`.
 
 ## Notes
 

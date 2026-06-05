@@ -14,7 +14,7 @@ set -euo pipefail
 
 REPO=/storage/project/r-agarg35-0/eliu354/external_repos/le-wm
 export STABLEWM_HOME=/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm
-export LEWM_EXPERIMENT_ROOT=${STABLEWM_HOME}/experiments/flow_2x2_20260604
+export LEWM_EXPERIMENT_ROOT=${LEWM_EXPERIMENT_ROOT:-${STABLEWM_HOME}/experiments/flow_2x2_20260604}
 source "${REPO}/scripts/slurm_runtime_env.sh"
 export PYTHONNOUSERSITE=1
 export WANDB_MODE=${WANDB_MODE:-online}

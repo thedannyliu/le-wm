@@ -7,7 +7,7 @@ mkdir -p "${ROOT}/job_records"
 WM_EPOCH="${WM_EPOCH:-100}"
 MAX_EPOCHS="${MAX_EPOCHS:-${WM_EPOCH}}"
 ACTION_MAX_EPOCHS="${ACTION_MAX_EPOCHS:-20}"
-NUM_WORKERS="${NUM_WORKERS:-2}"
+NUM_WORKERS="${NUM_WORKERS:-6}"
 RECORD="${ROOT}/job_records/resubmit_$(date +%Y%m%d_%H%M%S).tsv"
 
 printf 'phase\ttask\twm_variant\tpolicy_variant\tseed\tjob_id\tdependency\n' > "${RECORD}"

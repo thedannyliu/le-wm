@@ -302,6 +302,37 @@ Latest queue check:
   - Validation: `.conda/lewm-flow-2x2/bin/python` successfully imported `train.py`, and Hydra composition confirmed `logging.requeue_checkpoint_every_n_steps=1000`.
   - Final checkpoint count remains zero for `weights_epoch_100.pt`; action-flow and real-environment eval outputs are not present yet.
   - Repo root remains clean: no `wandb/`, `outputs/`, `multirun/`, or `wandb_resume.json`.
+- Queue repair, 2026-06-05 13:29 EDT:
+  - The H200 chunks that were running at 12:06 were preempted again. `sacct` reports `PREEMPTED`, not an application failure:
+    - `9442757`, PushT flow seed 1, after 1:01:05.
+    - `9442771`, Cube original seed 1, after 1:01:16.
+    - `9442773`, Cube flow seed 0, after 1:01:50.
+    - `9445127`, PushT original seed 0, after 1:58:41.
+    - `9446407`, Cube flow seed 1, after 1:58:09.
+    - `9446415`, PushT flow seed 0, after 1:58:11.
+    - `9446424`, PushT original seed 1, after 1:59:14.
+  - The corresponding supervisors completed and submitted replacement chunks:
+    - `9448680`, PushT flow seed 1; supervisor `9448681`.
+    - `9448686`, Cube original seed 1; supervisor `9448687`.
+    - `9448697`, Cube flow seed 0; supervisor `9448698`.
+    - `9450886`, Cube flow seed 1; supervisor `9450887`.
+    - `9450903`, PushT original seed 0; supervisor `9450905`.
+    - `9450904`, PushT flow seed 0; supervisor `9450906`.
+    - `9450920`, PushT original seed 1; supervisor `9450921`.
+  - Together with earlier replacement `9448176` and supervisor `9448177` for Cube original seed 0, the current queue is complete: eight world-model jobs are pending on `gpu-h200` for priority and eight supervisors are pending on valid `afterany` dependencies.
+  - `scontrol show job` confirms all current GPU and CPU jobs use `QOS=embers`; no job is using `inferno`.
+  - Step-level requeue checkpointing has not produced new `last.ckpt` files yet because the replacement chunks submitted after the patch have not started running. Existing `last.ckpt` files are still the older epoch-end checkpoints from 2026-06-04.
+  - Latest training metrics before the preemptions:
+    - PushT original seed 0: epoch 2, global step 41750.
+    - PushT original seed 1: epoch 1, global step 27850.
+    - PushT flow seed 0: epoch 3, global step 55600.
+    - PushT flow seed 1: epoch 2, global step 34800.
+    - Cube original seed 0: epoch 0, global step 4550.
+    - Cube original seed 1: epoch 1, global step 17200.
+    - Cube flow seed 0: epoch 0, global step 4550.
+    - Cube flow seed 1: epoch 0, global step 9000.
+  - Final checkpoint count remains zero for `weights_epoch_100.pt`; action-flow and real-environment eval outputs are not present yet.
+  - Repo root remains clean: no `wandb/`, `outputs/`, `multirun/`, or `wandb_resume.json`.
 
 ## Notes
 

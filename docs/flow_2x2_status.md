@@ -406,6 +406,29 @@ Latest queue check:
     - Supervisors: `9456791`, `9464471`, and `9464473`, each pending on the matching train job with `afterany`.
   - Log sweep found no new `RuntimeError`, `Traceback`, CUDA OOM, Hydra override error, missing-file error, dependency failure, pin-memory failure, or W&B error in current PushT formal/sanity logs.
   - Repo root remains clean: no `wandb/`, `outputs/`, `multirun/`, or `wandb_resume.json`.
+- PushT dataloader repair, 2026-06-05 20:25 EDT:
+  - Formal L40S seed 2 job `9456790` stopped after 3:49:35. `sacct` reports `PREEMPTED`, but the application log shows `RuntimeError: Pin memory thread exited unexpectedly` at epoch 4, global step 57741.
+  - Progress was not lost:
+    - Epoch checkpoints were written through `weights_epoch_4.pt`.
+    - Step-level `last.ckpt` was last updated at 20:16:39 under the project-storage formal run directory.
+  - Supervisor `9456791` completed and submitted replacement `9476414` plus supervisor `9476415`, but those jobs would still have used the old formal pin-memory dataloader settings.
+  - Added dataloader environment controls to the formal train, supervisor, and action-flow Slurm entrypoints:
+    - `PIN_MEMORY`
+    - `PERSISTENT_WORKERS`
+    - `PREFETCH_FACTOR`
+  - Updated `scripts/submit_pusht_native_formal.sh` so formal jobs default to the stable dataloader settings `PIN_MEMORY=False`, `PERSISTENT_WORKERS=False`, and `PREFETCH_FACTOR=1`.
+  - Canceled old pending formal jobs and supervisors that would have kept the unstable pin-memory settings:
+    - `9464470`, `9464471`, `9464472`, `9464473`, `9476414`, and `9476415`.
+  - Resubmitted stable formal jobs:
+    - `9476430`, seed 0, H100, `QOS=embers`, `PIN_MEMORY=False`, `PERSISTENT_WORKERS=False`, `PREFETCH_FACTOR=1`, pending on priority.
+    - `9476431`, supervisor for `9476430`, dependency `afterany:9476430`.
+    - `9476432`, seed 1, A100, `QOS=embers`, `PIN_MEMORY=False`, `PERSISTENT_WORKERS=False`, `PREFETCH_FACTOR=1`, pending on priority.
+    - `9476433`, supervisor for `9476432`, dependency `afterany:9476432`.
+    - `9476434`, seed 2, L40S, `QOS=embers`, `PIN_MEMORY=False`, `PERSISTENT_WORKERS=False`, `PREFETCH_FACTOR=1`, pending on priority and expected to resume from the existing seed 2 `last.ckpt`.
+    - `9476435`, supervisor for `9476434`, dependency `afterany:9476434`.
+  - Speed sanity retries `9464427` and `9464428` remain pending on H100/A100 priority. The completed L40S sanity retry `9464429` remains valid as the current speed sanity result.
+  - Validation: shell syntax passed, Hydra composed with `loader.pin_memory=False`, `loader.persistent_workers=False`, and `loader.prefetch_factor=1`, and `scontrol show job -dd` confirmed all new formal jobs and supervisors carry the stable dataloader environment.
+  - Repo root remains clean: no `wandb/`, `outputs/`, `multirun/`, or `wandb_resume.json`.
 
 ## Notes
 

@@ -21,6 +21,9 @@ export WANDB_MODE=${WANDB_MODE:-online}
 export WANDB_PROJECT=${WANDB_PROJECT:-lewm-flow-2x2}
 export ACTION_MAX_EPOCHS=${ACTION_MAX_EPOCHS:-20}
 export NUM_WORKERS=${NUM_WORKERS:-6}
+export PIN_MEMORY=${PIN_MEMORY:-True}
+export PERSISTENT_WORKERS=${PERSISTENT_WORKERS:-True}
+export PREFETCH_FACTOR=${PREFETCH_FACTOR:-3}
 
 mkdir -p "${LEWM_EXPERIMENT_ROOT}/slurm" "${LEWM_JOB_WORKDIR}"
 export PYTHONPATH="${REPO}${PYTHONPATH:+:${PYTHONPATH}}"
@@ -36,7 +39,7 @@ PY="${REPO}/.conda/lewm-flow-2x2/bin/python"
 
 echo "Action flow: Task=${TASK} Data=${DATA} WM=${WM_VARIANT} Seed=${SEED}"
 echo "World model: ${WORLD_MODEL}"
-echo "ACTION_MAX_EPOCHS=${ACTION_MAX_EPOCHS} NUM_WORKERS=${NUM_WORKERS}"
+echo "ACTION_MAX_EPOCHS=${ACTION_MAX_EPOCHS} NUM_WORKERS=${NUM_WORKERS} PIN_MEMORY=${PIN_MEMORY} PERSISTENT_WORKERS=${PERSISTENT_WORKERS} PREFETCH_FACTOR=${PREFETCH_FACTOR}"
 echo "Runtime root=${LEWM_RUNTIME_ROOT}"
 
 EXTRA_ARGS=()
@@ -57,9 +60,9 @@ fi
   device=cuda \
   trainer.max_epochs="${ACTION_MAX_EPOCHS}" \
   loader.num_workers="${NUM_WORKERS}" \
-  loader.pin_memory=True \
-  loader.persistent_workers=True \
-  loader.prefetch_factor=3 \
+  loader.pin_memory="${PIN_MEMORY}" \
+  loader.persistent_workers="${PERSISTENT_WORKERS}" \
+  loader.prefetch_factor="${PREFETCH_FACTOR}" \
   hydra.run.dir="${LEWM_RUNTIME_ROOT}/hydra/${SLURM_JOB_ID}/${TASK}_${WM_VARIANT}_seed${SEED}_action_flow" \
   wandb.enabled=True \
   "${EXTRA_ARGS[@]}"

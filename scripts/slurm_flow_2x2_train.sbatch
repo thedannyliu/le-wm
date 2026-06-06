@@ -21,6 +21,9 @@ export WANDB_MODE=${WANDB_MODE:-online}
 export WANDB_PROJECT=${WANDB_PROJECT:-lewm-flow-2x2}
 export MAX_EPOCHS=${MAX_EPOCHS:-100}
 export NUM_WORKERS=${NUM_WORKERS:-6}
+export PIN_MEMORY=${PIN_MEMORY:-True}
+export PERSISTENT_WORKERS=${PERSISTENT_WORKERS:-True}
+export PREFETCH_FACTOR=${PREFETCH_FACTOR:-3}
 export RESUME_AUTO=${RESUME_AUTO:-True}
 export SUBDIR=${SUBDIR:-}
 
@@ -45,7 +48,7 @@ PY
 echo "Python/Torch: ${python_info}"
 echo "Task=${TASK} Data=${DATA} WM=${WM_VARIANT} Model=${MODEL} Seed=${SEED}"
 echo "WANDB_MODE=${WANDB_MODE}"
-echo "MAX_EPOCHS=${MAX_EPOCHS} NUM_WORKERS=${NUM_WORKERS} RESUME_AUTO=${RESUME_AUTO} SUBDIR=${SUBDIR}"
+echo "MAX_EPOCHS=${MAX_EPOCHS} NUM_WORKERS=${NUM_WORKERS} PIN_MEMORY=${PIN_MEMORY} PERSISTENT_WORKERS=${PERSISTENT_WORKERS} PREFETCH_FACTOR=${PREFETCH_FACTOR} RESUME_AUTO=${RESUME_AUTO} SUBDIR=${SUBDIR}"
 echo "Runtime root=${LEWM_RUNTIME_ROOT}"
 
 EXTRA_ARGS=()
@@ -70,9 +73,9 @@ fi
   trainer.max_epochs="${MAX_EPOCHS}" \
   resume.auto="${RESUME_AUTO}" \
   loader.num_workers="${NUM_WORKERS}" \
-  loader.pin_memory=True \
-  loader.persistent_workers=True \
-  loader.prefetch_factor=3 \
+  loader.pin_memory="${PIN_MEMORY}" \
+  loader.persistent_workers="${PERSISTENT_WORKERS}" \
+  loader.prefetch_factor="${PREFETCH_FACTOR}" \
   hydra.run.dir="${LEWM_RUNTIME_ROOT}/hydra/${SLURM_JOB_ID}/${TASK}_${WM_VARIANT}_seed${SEED}" \
   wandb.enabled=True \
   "${EXTRA_ARGS[@]}"

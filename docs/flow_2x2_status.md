@@ -429,6 +429,27 @@ Latest queue check:
   - Speed sanity retries `9464427` and `9464428` remain pending on H100/A100 priority. The completed L40S sanity retry `9464429` remains valid as the current speed sanity result.
   - Validation: shell syntax passed, Hydra composed with `loader.pin_memory=False`, `loader.persistent_workers=False`, and `loader.prefetch_factor=1`, and `scontrol show job -dd` confirmed all new formal jobs and supervisors carry the stable dataloader environment.
   - Repo root remains clean: no `wandb/`, `outputs/`, `multirun/`, or `wandb_resume.json`.
+- PushT repair, 2026-06-06 05:10 EDT:
+  - H100 speed sanity retry `9464427` completed successfully in 36:55 wall time.
+    - One epoch processed 13933 steps with a final reported rate around 8.09 it/s.
+    - Final metrics included `fit/loss=0.1671`, `fit/pred_loss=0.03133`, `validate/loss=0.2055`, and `validate/pred_loss=0.02822`.
+    - Checkpoint written: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_h100_speed_retry1_20260605/checkpoints/pusht/h100_retry1_speed/seed_0/lewm/weights_epoch_1.pt`.
+  - Formal H100 seed 0 job `9476430` is running with the stable dataloader settings:
+    - Latest observed progress: epoch 8, about 5.3 it/s.
+    - Epoch checkpoints written through `weights_epoch_8.pt`.
+    - Step-level `last.ckpt` continues to update under the project-storage formal run directory.
+  - Formal A100 seed 1 job `9476432` is running with the stable dataloader settings:
+    - Latest observed progress: epoch 0, about 4.6 it/s.
+    - Step-level `last.ckpt` has been written.
+  - A100 speed sanity retry `9464428` is running.
+  - Formal L40S seed 2 job `9476434` failed at startup on node `atl1-1-03-007-31-0` because that node reported an NVIDIA driver too old for the current PyTorch/CUDA build. Supervisor `9476435` stopped because the upstream state was `FAILED`.
+  - Updated `scripts/submit_pusht_native_formal.sh` so formal seed 2 defaults to H100 instead of L40S, avoiding the mixed-driver L40S partition for formal training.
+  - Submitted H100 replacement for formal seed 2:
+    - `9490035`, `lewm-pusht-native-h100-s2-drvfix`, `gpu-h100`, `QOS=embers`, stable dataloader settings, pending on priority.
+    - `9490036`, `sup-pusht-native-h100-s2-drvfix`, dependency `afterany:9490035`.
+    - Submission record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_native_formal_20260605/job_records/repair_l40s_driver_seed2_20260606_050751.tsv`.
+  - Active queue now has H100 seed 0 running (`9476430`), A100 seed 1 running (`9476432`), H100 seed 2 pending (`9490035`), A100 speed sanity running (`9464428`), and valid supervisors for seeds 0/1/2 (`9476431`, `9476433`, `9490036`).
+  - Repo root remains clean: no `wandb/`, `outputs/`, `multirun/`, or `wandb_resume.json`.
 
 ## Notes
 

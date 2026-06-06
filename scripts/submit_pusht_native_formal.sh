@@ -62,6 +62,6 @@ submit_seed() {
 
 submit_seed 0 h100 gpu-h100 gpu:h100:1 8 160G 6
 submit_seed 1 a100 gpu-a100 gpu:a100:1 8 160G 6
-submit_seed 2 l40s gpu-l40s gpu:l40s:1 4 120G 4
+submit_seed 2 h100 gpu-h100 gpu:h100:1 8 160G 6
 
 echo "RECORD=${RECORD}"

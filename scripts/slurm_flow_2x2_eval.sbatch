@@ -44,6 +44,8 @@ COMMON_ARGS=(
   experiment.wm_variant="${WM_VARIANT}"
   experiment.policy_variant="${POLICY_VARIANT}"
   world.max_episode_steps=100
+  eval.num_eval="${EVAL_NUM_EVAL:-50}"
+  eval.eval_budget="${EVAL_BUDGET:-50}"
   hydra.run.dir="${LEWM_RUNTIME_ROOT}/hydra/${SLURM_JOB_ID}/${TASK}_${WM_VARIANT}_${POLICY_VARIANT}_seed${SEED}_eval"
   wandb.enabled=True
 )
@@ -59,5 +61,8 @@ if [ "${POLICY_VARIANT}" = "flow" ]; then
     solver.action_model_path="${ACTION_MODEL_PATH}" \
     solver.action_model_cache_dir=/
 else
-  "${PY}" "${REPO}/eval.py" "${COMMON_ARGS[@]}" solver=cem
+  "${PY}" "${REPO}/eval.py" "${COMMON_ARGS[@]}" solver=cem \
+    solver.num_samples="${SOLVER_NUM_SAMPLES:-300}" \
+    solver.n_steps="${SOLVER_N_STEPS:-30}" \
+    solver.topk="${SOLVER_TOPK:-30}"
 fi

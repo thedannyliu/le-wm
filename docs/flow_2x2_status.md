@@ -470,6 +470,25 @@ Latest queue check:
   - Current log sweep found no new `RuntimeError`, `Traceback`, CUDA OOM, driver error, missing-file error, pin-memory failure, dependency failure, or W&B error in the active PushT formal/sanity logs.
   - No repair or cancellation was needed in this check.
   - Repo root remains clean: no `wandb/`, `outputs/`, `multirun/`, or `wandb_resume.json`.
+- PushT formal continuation check, 2026-06-06 22:42 EDT:
+  - Seed 0 chunk `9507523` reached the expected 8-hour `embers` wall-time limit and ended with `TIMEOUT` after 8:00:28.
+  - Supervisor `9507524` completed successfully in 8 seconds with `QOS=embers`.
+    - It checked for `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_native_formal_20260605/checkpoints/pusht/wm_original_policy_original/seed_0/lewm/weights_epoch_100.pt`.
+    - Because the final checkpoint was not ready, it submitted resumable seed 0 continuation job `9522910` and next supervisor `9522912`.
+  - New seed 0 continuation `9522910` is pending on H100 priority, not failed:
+    - `QOS=embers`, `gpu-h100`, `8 CPU`, `160G`, `TimeLimit=08:00:00`.
+    - Exported settings include `RESUME_AUTO=True`, `NUM_WORKERS=6`, `PIN_MEMORY=False`, `PERSISTENT_WORKERS=False`, and `PREFETCH_FACTOR=1`.
+    - Supervisor `9522912` is pending with valid dependency `afterany:9522910`.
+  - Current active formal jobs remain healthy:
+    - Seed 1 `9509959` is running on H100 at epoch 19/100, about 5.1 it/s, with `last.ckpt` updates every 1000 steps.
+    - Seed 2 `9518823` is running on H100 at epoch 24/100, about 5.1-5.2 it/s, with `last.ckpt` updates every 1000 steps.
+  - Latest checkpoint progress:
+    - Seed 0 has epoch checkpoints through `weights_epoch_28.pt`.
+    - Seed 1 has epoch checkpoints through `weights_epoch_19.pt`.
+    - Seed 2 has epoch checkpoints through `weights_epoch_24.pt`.
+  - Current log sweep found no new `RuntimeError`, `Traceback`, CUDA OOM, driver error, missing-file error, pin-memory failure, dependency failure, or W&B error in the active formal logs.
+  - No manual repair was needed beyond confirming the supervisor-submitted continuation.
+  - Repo root remains clean: no `wandb/`, `outputs/`, `multirun/`, or `wandb_resume.json`.
 
 ## Notes
 

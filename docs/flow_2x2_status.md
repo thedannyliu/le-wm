@@ -508,6 +508,19 @@ Latest queue check:
   - Active logs and queue state show no unrepaired failure, missing supervisor, bad dependency, CUDA OOM, driver error, pin-memory failure, or W&B failure.
   - No manual cancellation or resubmission was needed in this check.
   - Repo root remains clean: no `wandb/`, `outputs/`, `multirun/`, or `wandb_resume.json`.
+- PushT formal health check, 2026-06-07 05:03 EDT:
+  - Current formal queue:
+    - Seed 0 `9522910` is running on H100 with `QOS=embers` after 5:15 runtime; supervisor `9522912` is pending on `afterany:9522910`.
+    - Seed 1 `9533424` is running on H100 with `QOS=embers` after 1:57 runtime; supervisor `9533425` is pending on `afterany:9533424`.
+    - Seed 2 `9518823` is running on H100 with `QOS=embers` after 7:42 runtime; supervisor `9518824` is pending on valid `afterany:9518823` and should handle the expected 8-hour chunk limit.
+  - All active world-model jobs still carry the intended settings: `RESUME_AUTO=True`, `NUM_WORKERS=6`, `PIN_MEMORY=False`, `PERSISTENT_WORKERS=False`, and `PREFETCH_FACTOR=1`.
+  - Latest observed progress:
+    - Seed 0: epoch 34/100, global step 481650; epoch checkpoints through `weights_epoch_34.pt`; validation metrics include `validate/loss=0.11950` and `validate/pred_loss=0.002850`.
+    - Seed 1: epoch 27/100, global step 378450; epoch checkpoints through `weights_epoch_27.pt`; validation metrics include `validate/loss=0.11842` and `validate/pred_loss=0.003195`.
+    - Seed 2: epoch 32/100, global step 452000; epoch checkpoints through `weights_epoch_32.pt`; validation metrics include `validate/loss=0.11723` and `validate/pred_loss=0.002823`.
+  - Active log sweep found no new `RuntimeError`, `Traceback`, CUDA OOM, driver error, missing-file error, pin-memory failure, dependency failure, or W&B error.
+  - No manual repair was needed in this check.
+  - Repo root remains clean: no `wandb/`, `outputs/`, `multirun/`, or `wandb_resume.json`.
 
 ## Notes
 

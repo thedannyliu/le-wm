@@ -17,7 +17,8 @@ DEFAULT_EXPERIMENT_NAME = "flow_2x2_20260604"
 def get_git_sha():
     try:
         return subprocess.check_output(
-            ["git", "rev-parse", "HEAD"], text=True
+            ["git", "-C", str(Path(__file__).resolve().parent), "rev-parse", "HEAD"],
+            text=True,
         ).strip()
     except Exception:
         return "unknown"

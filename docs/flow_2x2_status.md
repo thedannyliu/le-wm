@@ -521,6 +521,21 @@ Latest queue check:
   - Active log sweep found no new `RuntimeError`, `Traceback`, CUDA OOM, driver error, missing-file error, pin-memory failure, dependency failure, or W&B error.
   - No manual repair was needed in this check.
   - Repo root remains clean: no `wandb/`, `outputs/`, `multirun/`, or `wandb_resume.json`.
+- PushT training/eval insight check, 2026-06-07 05:52 EDT:
+  - Training curve insight from current metrics:
+    - Seed 0 reached epoch 35/100, global step 494450, `validate/pred_loss=0.002737`, and `validate/loss=0.116714`; this is an 18.4x reduction in validation prediction loss from epoch 0.
+    - Seed 1 reached epoch 28/100, global step 391750, `validate/pred_loss=0.003292`, and `validate/loss=0.117468`; this is a 12.7x reduction from epoch 0.
+    - Seed 2 reached epoch 33/100, global step 463100, `validate/pred_loss=0.002889`, and `validate/loss=0.117936`; this is a 20.6x reduction from epoch 0.
+    - Most of the prediction-loss improvement happened by epoch 5-10; after roughly epoch 20 the curve is still improving but much more slowly. Seed 0 currently has the best validation prediction loss, seed 2 is close, and seed 1 lags slightly.
+  - Submitted quick current-checkpoint CEM real-environment evals with `eval.num_eval=3`, `eval.eval_budget=50`, `solver.num_samples=96`, `solver.n_steps=8`, and `solver.topk=12`.
+    - Seed 0 checkpoint `weights_epoch_35.pt`, job `9541124`, H100, completed in 1:18, success rate `100.0%`, episode successes `[true, true, true]`, W&B run `ls1nsnmv`.
+    - Seed 1 checkpoint `weights_epoch_28.pt`, job `9541125`, A100, completed in 1:17, success rate `66.67%`, episode successes `[false, true, true]`, W&B run `6b2dqxci`.
+    - Seed 2 checkpoint `weights_epoch_33.pt`, job `9541126`, H100, completed in 1:18, success rate `66.67%`, episode successes `[false, true, true]`, W&B run `1f8fviyz`.
+  - Quick eval outputs were written under `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_native_formal_20260605/pusht/wm_original_policy_quick_cem_20260607_0527/`.
+  - Current ability insight: the partially trained PushT models already solve some real-environment starts with a very small CEM budget; however, the sample size is only 3 episodes per seed and the CEM budget is intentionally reduced, so these results are directional rather than final.
+  - Eval Slurm now supports quick-eval overrides `EVAL_NUM_EVAL`, `EVAL_BUDGET`, `SOLVER_NUM_SAMPLES`, `SOLVER_N_STEPS`, and `SOLVER_TOPK`; formal defaults remain unchanged.
+  - Quick eval manifests had `git_sha: unknown` because eval jobs run from project runtime workdirs. Commit `2613b11` fixed future manifest git SHA logging by resolving the repo through `experiment_logging.py`.
+  - The formal 100-epoch world-model jobs continue running; no final checkpoint or formal full-budget eval exists yet.
 
 ## Notes
 

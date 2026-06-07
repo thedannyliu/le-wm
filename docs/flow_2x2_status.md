@@ -450,6 +450,26 @@ Latest queue check:
     - Submission record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_native_formal_20260605/job_records/repair_l40s_driver_seed2_20260606_050751.tsv`.
   - Active queue now has H100 seed 0 running (`9476430`), A100 seed 1 running (`9476432`), H100 seed 2 pending (`9490035`), A100 speed sanity running (`9464428`), and valid supervisors for seeds 0/1/2 (`9476431`, `9476433`, `9490036`).
   - Repo root remains clean: no `wandb/`, `outputs/`, `multirun/`, or `wandb_resume.json`.
+- PushT formal health check, 2026-06-06 22:05 EDT:
+  - A100 speed sanity retry `9464428` completed successfully in 46:37 wall time with `QOS=embers`.
+    - One epoch processed 13933 steps with a final reported training rate around 5.98 it/s.
+    - Final metrics included `fit/loss=0.2520`, `fit/pred_loss=0.06682`, `validate/loss=0.2035`, and `validate/pred_loss=0.02619`.
+    - Checkpoint written: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_a100_speed_retry1_20260605/checkpoints/pusht/a100_retry1_speed/seed_0/lewm/weights_epoch_1.pt`.
+  - Formal PushT native world-model jobs are running on H100 with stable dataloader settings and valid continuation supervisors:
+    - `9507523`, seed 0, running for 7:41 on H100; supervisor `9507524` pending on `afterany:9507523`.
+    - `9509959`, seed 1, running for 5:46 on H100; supervisor `9509960` pending on `afterany:9509959`.
+    - `9518823`, seed 2, running for 0:43 on H100; supervisor `9518824` pending on `afterany:9518823`.
+  - Latest observed formal progress:
+    - Seed 0: epoch 27/100, global step 390100, about 5.1 it/s; latest validation metrics include `validate/loss=0.11760` and `validate/pred_loss=0.003113`; epoch checkpoints written through `weights_epoch_27.pt`.
+    - Seed 1: epoch 18/100, global step 263350, about 5.2-5.3 it/s; latest validation metrics include `validate/loss=0.11778` and `validate/pred_loss=0.003623`; epoch checkpoints written through `weights_epoch_18.pt`.
+    - Seed 2: epoch 23 completed and `weights_epoch_24.pt` was saved; latest validation metrics include `validate/loss=0.11826` and `validate/pred_loss=0.003827`; training is continuing into the next epoch.
+  - Historical issues are already repaired:
+    - Earlier pin-memory failure was addressed by formal defaults `PIN_MEMORY=False`, `PERSISTENT_WORKERS=False`, and `PREFETCH_FACTOR=1`.
+    - Earlier L40S driver failure was addressed by moving formal seed 2 to H100.
+    - Expected `TIMEOUT`/`PREEMPTED` chunks are handled by the `afterany` supervisors with `resume.auto=True`.
+  - Current log sweep found no new `RuntimeError`, `Traceback`, CUDA OOM, driver error, missing-file error, pin-memory failure, dependency failure, or W&B error in the active PushT formal/sanity logs.
+  - No repair or cancellation was needed in this check.
+  - Repo root remains clean: no `wandb/`, `outputs/`, `multirun/`, or `wandb_resume.json`.
 
 ## Notes
 

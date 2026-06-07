@@ -536,6 +536,20 @@ Latest queue check:
   - Eval Slurm now supports quick-eval overrides `EVAL_NUM_EVAL`, `EVAL_BUDGET`, `SOLVER_NUM_SAMPLES`, `SOLVER_N_STEPS`, and `SOLVER_TOPK`; formal defaults remain unchanged.
   - Quick eval manifests had `git_sha: unknown` because eval jobs run from project runtime workdirs. Commit `2613b11` fixed future manifest git SHA logging by resolving the repo through `experiment_logging.py`.
   - The formal 100-epoch world-model jobs continue running; no final checkpoint or formal full-budget eval exists yet.
+- PushT monitoring and medium eval, 2026-06-07 06:01 EDT:
+  - Formal training remains healthy:
+    - Seed 0 `9522910` is running on H100 with `QOS=embers`, currently epoch 35/100, latest checkpoint `weights_epoch_35.pt`; supervisor `9522912` is pending on `afterany:9522910`.
+    - Seed 1 `9533424` is running on H100 with `QOS=embers`, currently epoch 28/100, latest checkpoint `weights_epoch_28.pt`; supervisor `9533425` is pending on `afterany:9533424`.
+    - Seed 2 `9539901` is running on H100 with `QOS=embers`, currently epoch 33/100, latest checkpoint `weights_epoch_33.pt`; supervisor `9539903` is pending on `afterany:9539901`.
+  - Active log sweep found no new `RuntimeError`, `Traceback`, CUDA OOM, driver error, missing-file error, pin-memory failure, dependency failure, or W&B error.
+  - Submitted medium current-checkpoint CEM real-environment evals with `eval.num_eval=10`, `eval.eval_budget=50`, and default CEM settings `solver.num_samples=300`, `solver.n_steps=30`, `solver.topk=30`.
+    - Initial seed 0 and seed 2 H100 eval jobs `9541361` and `9541363` were canceled while still pending on priority, then resubmitted on A100 as `9541486` and `9541487` to finish sooner.
+    - Seed 0 checkpoint `weights_epoch_35.pt`, job `9541486`, A100, completed in 1:12, success rate `100.0%`, episode successes `[true, true, true, true, true, true, true, true, true, true]`, W&B run `s5ktz4bi`.
+    - Seed 1 checkpoint `weights_epoch_28.pt`, job `9541362`, A100, completed in 1:14, success rate `90.0%`, episode successes `[true, true, true, false, true, true, true, true, true, true]`, W&B run `tz0ue2qe`.
+    - Seed 2 checkpoint `weights_epoch_33.pt`, job `9541487`, A100, completed in 1:51, success rate `80.0%`, episode successes `[true, false, true, true, true, true, true, false, true, true]`, W&B run `83f0265b`.
+  - Medium eval outputs were written under `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_native_formal_20260605/pusht/wm_original_policy_medium_cem_20260607_0558/`.
+  - Current ability insight: current partial checkpoints are already strong under full CEM settings on the sampled PushT starts; seed 0 is strongest, seed 1 is usable despite lagging in validation prediction loss, and seed 2 has lower medium-eval success than its validation loss alone would suggest. Continue training to 100 epochs and use the official full eval before making final claims.
+  - Repo root remains clean: no `wandb/`, `outputs/`, `multirun/`, or `wandb_resume.json`.
 
 ## Notes
 

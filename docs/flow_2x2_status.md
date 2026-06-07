@@ -489,6 +489,25 @@ Latest queue check:
   - Current log sweep found no new `RuntimeError`, `Traceback`, CUDA OOM, driver error, missing-file error, pin-memory failure, dependency failure, or W&B error in the active formal logs.
   - No manual repair was needed beyond confirming the supervisor-submitted continuation.
   - Repo root remains clean: no `wandb/`, `outputs/`, `multirun/`, or `wandb_resume.json`.
+- PushT formal health check, 2026-06-07 04:00 EDT:
+  - Seed 1 chunk `9509959` reached the expected 8-hour `embers` wall-time limit and ended with `TIMEOUT` after 8:00:26.
+  - Supervisor `9509960` completed successfully and submitted resumable seed 1 continuation `9528495` plus supervisor `9528496`.
+  - Seed 1 continuation `9528495` was later `PREEMPTED` after 2:18:41.
+    - Its log contains `FileNotFoundError` in `multiprocessing.resource_sharer` and `/tmp/pymp-*` finalizer cleanup near the preemption time.
+    - This is treated as preemption shutdown noise rather than a missing dataset/checkpoint error because the next continuation restored from `last.ckpt` and resumed training successfully.
+  - Supervisor `9528496` completed successfully and submitted current seed 1 continuation `9533424` plus supervisor `9533425`.
+  - Current formal queue:
+    - Seed 0 `9522910` is running on H100 with `QOS=embers`; supervisor `9522912` is pending on `afterany:9522910`.
+    - Seed 1 `9533424` is running on H100 with `QOS=embers`; supervisor `9533425` is pending on `afterany:9533424`.
+    - Seed 2 `9518823` is running on H100 with `QOS=embers`; supervisor `9518824` is pending on `afterany:9518823`.
+  - All active jobs have the intended resumable/stable dataloader export settings: `RESUME_AUTO=True`, `NUM_WORKERS=6`, `PIN_MEMORY=False`, `PERSISTENT_WORKERS=False`, and `PREFETCH_FACTOR=1`.
+  - Latest observed progress:
+    - Seed 0: epoch 33/100, global step 463550; epoch checkpoints through `weights_epoch_33.pt`; validation metrics include `validate/loss=0.11678` and `validate/pred_loss=0.002855`.
+    - Seed 1: epoch 25/100, global step 361900; epoch checkpoints through `weights_epoch_25.pt`; validation metrics include `validate/loss=0.11832` and `validate/pred_loss=0.003179`.
+    - Seed 2: epoch 31/100, global step 433800; epoch checkpoints through `weights_epoch_31.pt`; validation metrics include `validate/loss=0.11740` and `validate/pred_loss=0.002924`.
+  - Active logs and queue state show no unrepaired failure, missing supervisor, bad dependency, CUDA OOM, driver error, pin-memory failure, or W&B failure.
+  - No manual cancellation or resubmission was needed in this check.
+  - Repo root remains clean: no `wandb/`, `outputs/`, `multirun/`, or `wandb_resume.json`.
 
 ## Notes
 

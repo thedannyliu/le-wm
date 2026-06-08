@@ -587,3 +587,29 @@ Latest queue check:
       - Seed 0: train `9611252` pending on priority; supervisor `9611253` pending on `afterany:9611252`.
       - Seed 1: train `9611081` pending on priority; supervisor `9611082` pending on `afterany:9611081`.
       - Seed 2: train `9611083` running on H100; supervisor `9611084` pending on `afterany:9611083`.
+
+- PushT monitoring and diagnostic eval submission, 2026-06-08 04:01 EDT:
+  - Active native LeWM jobs:
+    - Seed 0 `9599279` is running on H100 at epoch 61/100, about 5.1 it/s; supervisor `9599280` remains pending on `afterany:9599279`.
+    - Seed 1 previous chunk `9583139` timed out after 8 hours and supervisor `9583140` completed; replacement train job `9611910` is pending on H100 with supervisor `9611911`.
+    - Seed 2 `9588616` is running on H100 at epoch 59/100, about 5.0-5.1 it/s; supervisor `9588618` remains pending on `afterany:9588616`.
+  - Active residual flow-WM jobs:
+    - Seed 0 `9611252` is running on H100 at epoch 0/100, about 4.9 it/s; manifest records git SHA `c25ac226ecc442e96d2f9b55a0597d9f5aa3805f`.
+    - Seed 1 `9611081` is pending on A100; supervisor `9611082` is pending on `afterany:9611081`.
+    - Seed 2 `9611083` is running on H100 at epoch 0/100, about 5.0-5.1 it/s; manifest records git SHA `6b4b74b7155931d320d07e9fb86740bd5ed7af8f`.
+  - Flow-WM early metrics are being logged to local JSONL and W&B:
+    - Seed 0 latest observed step: global step 6050, `fit/flow_loss=0.4841`, `fit/pred_loss=1.1424`.
+    - Seed 2 latest observed step: global step 7550, `fit/flow_loss=0.3650`, `fit/pred_loss=1.1250`.
+    - Both flow jobs are writing step checkpoints under project storage and show no active traceback, CUDA OOM, driver error, pin-memory failure, or W&B failure.
+  - Native seed 0 anomaly:
+    - Validation prediction loss was healthy through epoch 48 (`validate/pred_loss=0.0023916`, best observed), then degraded continuously.
+    - Latest epoch-level validation at epoch 60 is `validate/pred_loss=0.0290986`, with `validate/loss=0.1665637`.
+    - Native seed 1 and seed 2 do not show the same degradation: seed 1 epoch 56 `validate/pred_loss=0.0020629`; seed 2 epoch 58 `validate/pred_loss=0.0020323`.
+    - No active seed 0 crash or wrong model config was found; the job resumed from Lightning `last.ckpt` and uses `model=lewm`, `WM_VARIANT=original`, `PIN_MEMORY=False`, `PERSISTENT_WORKERS=False`, `PREFETCH_FACTOR=1`.
+  - Submitted medium CEM diagnostic evals on A100 with `eval.num_eval=10`, `eval.eval_budget=50`, `solver.num_samples=300`, `solver.n_steps=30`, `solver.topk=30`.
+    - Seed 0 best validation checkpoint: epoch 48, job `9612412`, policy variant `original_diag_e48`.
+    - Seed 0 latest checkpoint: epoch 61, job `9612413`, policy variant `original_diag_e61`.
+    - Seed 1 current checkpoint: epoch 57, job `9612415`, policy variant `original_diag_e57`.
+    - Seed 2 current checkpoint: epoch 59, job `9612416`, policy variant `original_diag_e59`.
+    - Job record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_native_formal_20260605/job_records/diag_eval_20260608_040118.tsv`.
+  - Decision: keep native seed 0 formal training running until diagnostic evals show whether the validation degradation also harms real-environment CEM success. Earlier seed 0 checkpoints remain available for evaluation and selection.

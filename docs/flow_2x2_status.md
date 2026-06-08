@@ -578,3 +578,12 @@ Latest queue check:
     - CPU shape smoke for `ConditionalFlowPredictor.flow_loss()` and `forward()` returned finite loss and output shape `(2, 3, 192)`.
     - Config comparison verified unchanged native modules and predictor hyperparameter parity except for flow-specific extras.
     - Repo root check found no generated `wandb/`, `outputs/`, `multirun/`, or `wandb_resume.json`.
+  - Follow-up tracking fix, 2026-06-08 03:31 EDT:
+    - Seed 0 job `9611079` started before commit `6b4b74b` was created, so its first manifest recorded previous git SHA `b6d5f8a` even though the working tree already contained the residual-flow code.
+    - Canceled seed 0 job `9611079` and supervisor `9611080`.
+    - Resubmitted seed 0 as train job `9611252` and supervisor `9611253`; they are pending on `embers`.
+    - Seed 2 job `9611083` started after commit `6b4b74b` and its manifest records git SHA `6b4b74b7155931d320d07e9fb86740bd5ed7af8f`.
+    - Current active flow-WM jobs after the fix:
+      - Seed 0: train `9611252` pending on priority; supervisor `9611253` pending on `afterany:9611252`.
+      - Seed 1: train `9611081` pending on priority; supervisor `9611082` pending on `afterany:9611081`.
+      - Seed 2: train `9611083` running on H100; supervisor `9611084` pending on `afterany:9611083`.

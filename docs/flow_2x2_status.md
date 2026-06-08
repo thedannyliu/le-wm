@@ -674,3 +674,28 @@ Latest queue check:
   - Eval settings matched the intended quick sanity check: `eval.num_eval=3`, `eval.eval_budget=50`, `solver.num_samples=96`, `solver.n_steps=8`, `solver.topk=12`, W&B online logging enabled.
   - Qualitative video check from contact sheets under `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/runtime/eval_frames/flow_quick_20260608`: the agent moves, but does not reliably move the T-block toward the goal and the control point often drifts away after contact. Treat this as a real flow-WM/planner quality failure, not an eval submission failure.
   - Immediate interpretation: flow optimization is still numerically healthy, but early residual flow-WM checkpoints are not usable with the current LeWM CEM interface. Continue training for trend data, but prioritize checking the flow rollout/sampling semantics and planner objective before spending full-budget eval on these early checkpoints.
+
+- PushT monitoring and eval push, 2026-06-08 18:31 EDT:
+  - Active LeWM jobs on H100:
+    - Native seed 0 train `9661577`, native seed 1 train `9639854`, native seed 2 train `9645447`.
+    - Flow-WM seed 0 train `9656993`, flow-WM seed 1 train `9643029`, flow-WM seed 2 train `9653769`.
+    - Supervisors remain pending on dependencies for all active train jobs.
+  - Active log check found no CUDA OOM, traceback, W&B failure, or unrepaired config issue. The only repeated warning is missing `pynvml`, which disables GPU monitor metrics but does not stop training.
+  - Native full50 selected-checkpoint evals completed:
+    - Seed 0 checkpoint epoch 48, job `9652297`: 50 episodes, success rate `88.0%`.
+    - Seed 1 checkpoint epoch 68, job `9652298`: 50 episodes, success rate `80.0%`.
+    - Seed 2 checkpoint epoch 70, job `9652299`: 50 episodes, success rate `86.0%`.
+  - Latest native validation:
+    - Seed 0 latest checkpoint epoch 77 is degraded (`validate/pred_loss=0.1444579`), so seed 0 reporting/eval should still use checkpoint epoch 48.
+    - Seed 1 current metric-best checkpoint is epoch 74 (`validate/pred_loss=0.0017167`).
+    - Seed 2 current metric-best checkpoint is epoch 75 (`validate/pred_loss=0.0016912`); latest checkpoint epoch 76 is close but slightly worse on validation (`validate/pred_loss=0.0017004`).
+  - Latest flow-WM validation continues to improve on flow matching loss but not deterministic prediction loss:
+    - Seed 0 latest checkpoint epoch 13: `validate/flow_loss=0.0611049`, `validate/pred_loss=1.2210`.
+    - Seed 1 latest checkpoint epoch 11: `validate/flow_loss=0.0710092`, `validate/pred_loss=1.2174`.
+    - Seed 2 latest checkpoint epoch 14: `validate/flow_loss=0.0610028`, `validate/pred_loss=1.2100`.
+  - Submitted follow-up evals on A100/embers; all are pending on priority:
+    - Native updated full50 evals: seed 1 epoch 74 job `9671667`, variant `original_full50_e74`; seed 2 epoch 75 job `9671668`, variant `original_full50_e75`.
+    - Flow later-checkpoint quick evals: seed 0 epoch 13 job `9671669`, variant `flow_quick_cem_e13_later`; seed 1 epoch 11 job `9671671`, variant `flow_quick_cem_e11_s1`; seed 2 epoch 14 job `9671672`, variant `flow_quick_cem_e14_later`.
+    - Job records:
+      - `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_native_formal_20260605/job_records/full_eval_update_20260608_182954.tsv`.
+      - `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_flow_wm_formal_20260608/job_records/quick_eval_later_20260608_182954.tsv`.

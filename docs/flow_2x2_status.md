@@ -699,3 +699,28 @@ Latest queue check:
     - Job records:
       - `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_native_formal_20260605/job_records/full_eval_update_20260608_182954.tsv`.
       - `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_flow_wm_formal_20260608/job_records/quick_eval_later_20260608_182954.tsv`.
+
+- PushT monitoring and flow diagnostics, 2026-06-08 19:56 EDT:
+  - Follow-up eval jobs completed cleanly:
+    - Native seed 1 checkpoint epoch 74, job `9671667`: 50 episodes, success rate `80.0%`. This matches seed 1 epoch 68, so the lower validation prediction loss did not improve full-CEM success.
+    - Native seed 2 checkpoint epoch 75, job `9671668`: 50 episodes, success rate `88.0%`. This is a small improvement over seed 2 epoch 70 at `86.0%`.
+    - Flow seed 0 checkpoint epoch 13, job `9671669`: 3 episodes, success rate `0.0%`.
+    - Flow seed 1 checkpoint epoch 11, job `9671671`: 3 episodes, success rate `0.0%`.
+    - Flow seed 2 checkpoint epoch 14, job `9671672`: 3 episodes, success rate `0.0%`.
+  - Current interpretation:
+    - Native LeWM remains strong under the original pipeline; best observed full50 results are seed 0 epoch 48 `88.0%`, seed 1 epoch 68/74 `80.0%`, and seed 2 epoch 75 `88.0%`.
+    - Flow-WM failure is reproduced across all three seeds and later checkpoints. Since native quick eval used the same reduced CEM settings and succeeded, the primary issue is likely flow rollout quality or predictor sampling semantics, not eval submission.
+  - Latest active training status:
+    - Native seed 0 and native seed 2 were preempted and resumed by supervisors as jobs `9673541` and `9673440`; native seed 1 job `9639854` continues running.
+    - Flow seed 2 was preempted and resumed by supervisor as job `9673439`; flow seed 0 job `9656993` and flow seed 1 job `9643029` continue running.
+    - Active log scan found no OOM, traceback, W&B failure, or config error; only missing-`pynvml` GPU monitor warnings.
+  - Added eval-only predictor sampling overrides in commit `313664c`:
+    - `eval.py` now honors optional `+predictor_stochastic_sample` and `+predictor_sample_steps` when the loaded predictor exposes those attributes.
+    - `scripts/slurm_flow_2x2_eval.sbatch` now forwards optional `PREDICTOR_STOCHASTIC_SAMPLE` and `PREDICTOR_SAMPLE_STEPS`.
+    - Default eval behavior is unchanged when these variables are unset.
+  - Submitted additional flow diagnostics on A100/embers; both are pending on priority:
+    - Full-CEM flow seed 2 checkpoint epoch 14, job `9676877`, variant `flow_fullcem_diag_e14_s2`, with `eval.num_eval=10`, `solver.num_samples=300`, `solver.n_steps=30`, `solver.topk=30`.
+    - Stochastic predictor quick eval seed 2 checkpoint epoch 14, job `9677090`, variant `flow_quick_stoch16_e14_s2`, with `eval.num_eval=3`, reduced CEM, `PREDICTOR_STOCHASTIC_SAMPLE=True`, and `PREDICTOR_SAMPLE_STEPS=16`.
+    - Job records:
+      - `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_flow_wm_formal_20260608/job_records/fullcem_diag_20260608_195201.tsv`.
+      - `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_flow_wm_formal_20260608/job_records/stochastic_eval_diag_20260608_195528.tsv`.

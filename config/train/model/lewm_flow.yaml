@@ -10,6 +10,8 @@ encoder:
 
 predictor:
   _target_: module.ConditionalFlowPredictor
+  # Same predictor interface as native LeWM, but trained with conditional
+  # flow matching over z_next - z_current residuals.
   num_frames: ${history_size}
   input_dim: ${embed_dim}
   hidden_dim: ${embed_dim}

@@ -315,7 +315,7 @@ class TimestepEmbedder(nn.Module):
 
 
 class ConditionalFlowPredictor(nn.Module):
-    """Conditional flow-matching predictor for next latent embeddings."""
+    """Conditional flow-matching predictor for next latent residuals."""
 
     def __init__(
         self,
@@ -384,12 +384,13 @@ class ConditionalFlowPredictor(nn.Module):
         return self.transformer(x, c)
 
     def flow_loss(self, ctx, act, target):
-        B = target.size(0)
+        residual = target - ctx
+        B = residual.size(0)
         t = torch.rand(B, device=target.device, dtype=target.dtype)
-        noise = torch.randn_like(target)
+        noise = torch.randn_like(residual)
         path_t = t.view(B, 1, 1)
-        noisy = (1.0 - path_t) * noise + path_t * target
-        velocity_target = target - noise
+        noisy = (1.0 - path_t) * noise + path_t * residual
+        velocity_target = residual - noise
         velocity_pred = self.vector_field(ctx, act, noisy, t)
         return F.mse_loss(velocity_pred, velocity_target)
 
@@ -397,7 +398,7 @@ class ConditionalFlowPredictor(nn.Module):
     def sample(self, ctx, act, steps=None, stochastic=None):
         steps = steps or self.sample_steps
         stochastic = self.stochastic_sample if stochastic is None else stochastic
-        x = torch.randn_like(ctx) if stochastic else torch.zeros_like(ctx)
+        residual = torch.randn_like(ctx) if stochastic else torch.zeros_like(ctx)
         dt = 1.0 / steps
         for i in range(steps):
             t = torch.full(
@@ -406,8 +407,8 @@ class ConditionalFlowPredictor(nn.Module):
                 device=ctx.device,
                 dtype=ctx.dtype,
             )
-            x = x + dt * self.vector_field(ctx, act, x, t)
-        return x
+            residual = residual + dt * self.vector_field(ctx, act, residual, t)
+        return ctx + residual
 
     def forward(self, ctx, act):
         return self.sample(ctx, act)

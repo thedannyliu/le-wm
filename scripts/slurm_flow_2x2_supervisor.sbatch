@@ -34,6 +34,9 @@ PIN_MEMORY="${PIN_MEMORY:-True}"
 PERSISTENT_WORKERS="${PERSISTENT_WORKERS:-True}"
 PREFETCH_FACTOR="${PREFETCH_FACTOR:-3}"
 WANDB_MODE="${WANDB_MODE:-online}"
+SUBMIT_ACTION_FLOW="${SUBMIT_ACTION_FLOW:-True}"
+SUBMIT_CEM_EVAL="${SUBMIT_CEM_EVAL:-True}"
+SUBMIT_FLOW_EVAL="${SUBMIT_FLOW_EVAL:-True}"
 UPSTREAM_JOB_ID="${UPSTREAM_JOB_ID:-}"
 SUBDIR="${SUBDIR:-}"
 RECORD="${RECORD:-${LEWM_EXPERIMENT_ROOT}/job_records/supervisor_$(date +%Y%m%d).tsv}"
@@ -81,30 +84,44 @@ if [ -f "${TARGET_CKPT}" ]; then
   fi
 
   echo "Final world model checkpoint exists; submitting downstream jobs."
-  af_id=$(sbatch --parsable \
-    --job-name="af-${TASK}-${WM_VARIANT}-s${SEED}" \
-    --output="${LEWM_EXPERIMENT_ROOT}/slurm/%x-%j.out" \
-    --error="${LEWM_EXPERIMENT_ROOT}/slurm/%x-%j.err" \
-    --export=ALL,WANDB_MODE="${WANDB_MODE}",LEWM_EXPERIMENT_ROOT="${LEWM_EXPERIMENT_ROOT}",ACTION_MAX_EPOCHS="${ACTION_MAX_EPOCHS}",NUM_WORKERS="${NUM_WORKERS}",PIN_MEMORY="${PIN_MEMORY}",PERSISTENT_WORKERS="${PERSISTENT_WORKERS}",PREFETCH_FACTOR="${PREFETCH_FACTOR}",TASK="${TASK}",DATA="${DATA}",WM_VARIANT="${WM_VARIANT}",WORLD_MODEL="${WORLD_MODEL}",SEED="${SEED}" \
-    scripts/slurm_flow_2x2_action_flow.sbatch)
-  log_record "action_flow" "flow" "${af_id}" "" "checkpoint_ready"
+  af_id=""
+  cem_id=""
+  flow_id=""
 
-  cem_id=$(sbatch --parsable \
-    --job-name="ev-${TASK}-${WM_VARIANT}-cem-s${SEED}" \
-    --output="${LEWM_EXPERIMENT_ROOT}/slurm/%x-%j.out" \
-    --error="${LEWM_EXPERIMENT_ROOT}/slurm/%x-%j.err" \
-    --export=ALL,WANDB_MODE="${WANDB_MODE}",LEWM_EXPERIMENT_ROOT="${LEWM_EXPERIMENT_ROOT}",TASK="${TASK}",CONFIG_NAME="${CONFIG}",WM_VARIANT="${WM_VARIANT}",POLICY_VARIANT=original,POLICY="${WORLD_MODEL}",SEED="${SEED}" \
-    scripts/slurm_flow_2x2_eval.sbatch)
-  log_record "eval" "original" "${cem_id}" "" "checkpoint_ready"
+  if [ "${SUBMIT_ACTION_FLOW}" = "True" ]; then
+    af_id=$(sbatch --parsable \
+      --job-name="af-${TASK}-${WM_VARIANT}-s${SEED}" \
+      --output="${LEWM_EXPERIMENT_ROOT}/slurm/%x-%j.out" \
+      --error="${LEWM_EXPERIMENT_ROOT}/slurm/%x-%j.err" \
+      --export=ALL,WANDB_MODE="${WANDB_MODE}",LEWM_EXPERIMENT_ROOT="${LEWM_EXPERIMENT_ROOT}",ACTION_MAX_EPOCHS="${ACTION_MAX_EPOCHS}",NUM_WORKERS="${NUM_WORKERS}",PIN_MEMORY="${PIN_MEMORY}",PERSISTENT_WORKERS="${PERSISTENT_WORKERS}",PREFETCH_FACTOR="${PREFETCH_FACTOR}",TASK="${TASK}",DATA="${DATA}",WM_VARIANT="${WM_VARIANT}",WORLD_MODEL="${WORLD_MODEL}",SEED="${SEED}" \
+      scripts/slurm_flow_2x2_action_flow.sbatch)
+    log_record "action_flow" "flow" "${af_id}" "" "checkpoint_ready"
+  fi
 
-  flow_id=$(sbatch --parsable \
-    --dependency=afterok:${af_id} \
-    --job-name="ev-${TASK}-${WM_VARIANT}-flow-s${SEED}" \
-    --output="${LEWM_EXPERIMENT_ROOT}/slurm/%x-%j.out" \
-    --error="${LEWM_EXPERIMENT_ROOT}/slurm/%x-%j.err" \
-    --export=ALL,WANDB_MODE="${WANDB_MODE}",LEWM_EXPERIMENT_ROOT="${LEWM_EXPERIMENT_ROOT}",TASK="${TASK}",CONFIG_NAME="${CONFIG}",WM_VARIANT="${WM_VARIANT}",POLICY_VARIANT=flow,POLICY="${WORLD_MODEL}",ACTION_MODEL_PATH="${ACTION_MODEL_PATH}",SEED="${SEED}" \
-    scripts/slurm_flow_2x2_eval.sbatch)
-  log_record "eval" "flow" "${flow_id}" "afterok:${af_id}" "checkpoint_ready"
+  if [ "${SUBMIT_CEM_EVAL}" = "True" ]; then
+    cem_id=$(sbatch --parsable \
+      --job-name="ev-${TASK}-${WM_VARIANT}-cem-s${SEED}" \
+      --output="${LEWM_EXPERIMENT_ROOT}/slurm/%x-%j.out" \
+      --error="${LEWM_EXPERIMENT_ROOT}/slurm/%x-%j.err" \
+      --export=ALL,WANDB_MODE="${WANDB_MODE}",LEWM_EXPERIMENT_ROOT="${LEWM_EXPERIMENT_ROOT}",TASK="${TASK}",CONFIG_NAME="${CONFIG}",WM_VARIANT="${WM_VARIANT}",POLICY_VARIANT=original,POLICY="${WORLD_MODEL}",SEED="${SEED}" \
+      scripts/slurm_flow_2x2_eval.sbatch)
+    log_record "eval" "original" "${cem_id}" "" "checkpoint_ready"
+  fi
+
+  if [ "${SUBMIT_FLOW_EVAL}" = "True" ]; then
+    if [ -z "${af_id}" ]; then
+      echo "SUBMIT_FLOW_EVAL=True requires SUBMIT_ACTION_FLOW=True." >&2
+      exit 1
+    fi
+    flow_id=$(sbatch --parsable \
+      --dependency=afterok:${af_id} \
+      --job-name="ev-${TASK}-${WM_VARIANT}-flow-s${SEED}" \
+      --output="${LEWM_EXPERIMENT_ROOT}/slurm/%x-%j.out" \
+      --error="${LEWM_EXPERIMENT_ROOT}/slurm/%x-%j.err" \
+      --export=ALL,WANDB_MODE="${WANDB_MODE}",LEWM_EXPERIMENT_ROOT="${LEWM_EXPERIMENT_ROOT}",TASK="${TASK}",CONFIG_NAME="${CONFIG}",WM_VARIANT="${WM_VARIANT}",POLICY_VARIANT=flow,POLICY="${WORLD_MODEL}",ACTION_MODEL_PATH="${ACTION_MODEL_PATH}",SEED="${SEED}" \
+      scripts/slurm_flow_2x2_eval.sbatch)
+    log_record "eval" "flow" "${flow_id}" "afterok:${af_id}" "checkpoint_ready"
+  fi
 
   printf 'submitted_at=%s\naction_flow=%s\ncem_eval=%s\nflow_eval=%s\n' \
     "$(date --iso-8601=seconds)" "${af_id}" "${cem_id}" "${flow_id}" > "${DONE_MARKER}"

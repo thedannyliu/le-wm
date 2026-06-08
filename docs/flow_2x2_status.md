@@ -555,3 +555,26 @@ Latest queue check:
 
 - Generated smoke outputs are intentionally outside git.
 - Existing untracked `AGENTS.md` and `reference.md` were left untouched.
+
+- PushT residual flow-WM submission, 2026-06-08 03:28 EDT:
+  - Added a focused plan in `docs/flow_wm_residual_cfm_plan.md`.
+  - Implemented the recommended flow-WM variant as residual Conditional Flow Matching over `z_next - z_current`.
+  - Pipeline double check:
+    - Training still uses `train.py`, `config/train/lewm.yaml`, `config/train/data/pusht.yaml`, and `pusht_expert_train.lance`.
+    - Encoder, action encoder, projector, prediction projector, optimizer, SIGReg, dataloader, checkpointing, W&B, and resume behavior match native LeWM.
+    - The only intended model swap is `module.ARPredictor` -> `module.ConditionalFlowPredictor`.
+    - Shared predictor hyperparameters match native LeWM: `num_frames`, `input_dim`, `hidden_dim`, `output_dim`, `depth`, `heads`, `mlp_dim`, `dim_head`, `dropout`, and `emb_dropout`.
+    - Flow-only predictor extras are `time_dim=64`, `sample_steps=8`, and `stochastic_sample=false`.
+  - Submitted formal PushT flow-WM runs under `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_flow_wm_formal_20260608`.
+    - Seed 0: train job `9611079`, H100, pending on priority; supervisor `9611080` pending on `afterany:9611079`.
+    - Seed 1: train job `9611081`, A100, pending on priority; supervisor `9611082` pending on `afterany:9611081`.
+    - Seed 2: train job `9611083`, H100, pending on priority; supervisor `9611084` pending on `afterany:9611083`.
+  - Submission settings: `QOS=embers`, `MAX_EPOCHS=100`, `RESUME_AUTO=True`, `NUM_WORKERS=6`, `PIN_MEMORY=False`, `PERSISTENT_WORKERS=False`, `PREFETCH_FACTOR=1`, `WANDB_MODE=online`.
+  - Supervisor settings for this run: `SUBMIT_ACTION_FLOW=False`, `SUBMIT_FLOW_EVAL=False`, `SUBMIT_CEM_EVAL=True`; this isolates `wm_flow_policy_original` and keeps the policy/planner as original LeWM CEM.
+  - Job record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_flow_wm_formal_20260608/job_records/submit_20260608_032818.tsv`.
+  - Canceled old unrelated `newt-flow-2x2` H200 array `9431231` because it was from `/storage/project/r-agarg35-0/eliu354/external_repos/newt`, not the LeWM pipeline requested here.
+  - Validation performed:
+    - `bash -n scripts/submit_pusht_flow_wm_formal.sh scripts/slurm_flow_2x2_supervisor.sbatch scripts/slurm_flow_2x2_train.sbatch`.
+    - CPU shape smoke for `ConditionalFlowPredictor.flow_loss()` and `forward()` returned finite loss and output shape `(2, 3, 192)`.
+    - Config comparison verified unchanged native modules and predictor hyperparameter parity except for flow-specific extras.
+    - Repo root check found no generated `wandb/`, `outputs/`, `multirun/`, or `wandb_resume.json`.

@@ -613,3 +613,34 @@ Latest queue check:
     - Seed 2 current checkpoint: epoch 59, job `9612416`, policy variant `original_diag_e59`.
     - Job record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_native_formal_20260605/job_records/diag_eval_20260608_040118.tsv`.
   - Decision: keep native seed 0 formal training running until diagnostic evals show whether the validation degradation also harms real-environment CEM success. Earlier seed 0 checkpoints remain available for evaluation and selection.
+
+- PushT monitoring and follow-up evals, 2026-06-08 15:00 EDT:
+  - Native diagnostic evals completed:
+    - Seed 0 epoch 48, job `9612412`, 10 episodes, success rate `90.0%`, episode successes `[true, true, false, true, true, true, true, true, true, true]`, W&B run `n4mg8s2s`.
+    - Seed 0 epoch 61, job `9612413`, 10 episodes, success rate `50.0%`, episode successes `[true, true, false, true, false, true, false, false, false, true]`, W&B run `odb5oyuq`.
+    - Seed 1 epoch 57, job `9612415`, 10 episodes, success rate `100.0%`, episode successes all true, W&B run `3s1it1yu`.
+    - Seed 2 epoch 59, job `9612416`, 10 episodes, success rate `90.0%`, episode successes `[true, true, true, true, true, true, false, true, true, true]`, W&B run `wft0auat`.
+  - Diagnostic conclusion:
+    - Seed 0 validation degradation is real in environment eval: epoch 48 is substantially better than epoch 61 on the same 10 sampled starts.
+    - Keep seed 0 training running for formal completeness, but use checkpoint selection for reporting and fuller evals instead of trusting the latest seed 0 checkpoint.
+  - Current native training progress:
+    - Seed 0 active job `9620378` is running on H100 at epoch 73/100; latest `validate/pred_loss=0.0223973`, best checkpoint remains epoch 48 with `validate/pred_loss=0.0023916`.
+    - Seed 1 active job `9639854` is running on H100 at epoch 69/100; latest/best observed `validate/pred_loss=0.0018154`.
+    - Seed 2 active job `9645447` is running on H100 at epoch 71/100; latest/best observed `validate/pred_loss=0.0017847`.
+  - Current residual flow-WM training progress:
+    - Seed 0 active job `9619444` is running on H100 at epoch 10/100; latest `fit/flow_loss=0.1720`, `validate/flow_loss=0.0643`, `validate/pred_loss=1.1768`.
+    - Seed 1 active job `9643029` is running on H100 at epoch 7/100; latest `fit/flow_loss=0.1748`, `validate/flow_loss=0.0812`, `validate/pred_loss=1.1965`.
+    - Seed 2 active job `9619424` is running on H100 at epoch 11/100; latest `fit/flow_loss=0.1681`, `validate/flow_loss=0.0650`, `validate/pred_loss=1.1924`.
+    - Flow matching loss is improving, but deterministic predicted-latent MSE remains much worse than native LeWM at these early epochs; treat flow-WM as not yet competitive until eval confirms otherwise.
+  - Submitted selected-checkpoint full native evals on A100 with 50 episodes and full CEM settings (`num_samples=300`, `n_steps=30`, `topk=30`):
+    - Seed 0 epoch 48, job `9652297`, policy variant `original_full50_e48`.
+    - Seed 1 epoch 68, job `9652298`, policy variant `original_full50_e68`.
+    - Seed 2 epoch 70, job `9652299`, policy variant `original_full50_e70`.
+    - Job record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_native_formal_20260605/job_records/full_eval_20260608_150031.tsv`.
+  - Submitted early flow-WM CEM sanity evals on A100 with 3 episodes and reduced CEM (`num_samples=96`, `n_steps=8`, `topk=12`):
+    - Seed 0 epoch 10, job `9652300`, policy variant `flow_quick_cem_e10`.
+    - Seed 2 epoch 11, job `9652301`, policy variant `flow_quick_cem_e11`.
+    - Job record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_flow_wm_formal_20260608/job_records/quick_eval_20260608_150031.tsv`.
+  - Active log check:
+    - Active train jobs show resume warnings and normal W&B resume messages, but no active CUDA OOM, driver error, pin-memory failure, W&B failure, or unrepaired config issue.
+    - Recent flow preemption/FileNotFoundError shutdown noise was handled by supervisors, which resubmitted the affected seeds and resumed from Lightning `last.ckpt`.

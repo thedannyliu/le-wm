@@ -644,3 +644,25 @@ Latest queue check:
   - Active log check:
     - Active train jobs show resume warnings and normal W&B resume messages, but no active CUDA OOM, driver error, pin-memory failure, W&B failure, or unrepaired config issue.
     - Recent flow preemption/FileNotFoundError shutdown noise was handled by supervisors, which resubmitted the affected seeds and resumed from Lightning `last.ckpt`.
+
+- PushT checkpoint index, 2026-06-08 15:07 EDT:
+  - Selection rule:
+    - Native LeWM best checkpoint is the lowest observed `validate/pred_loss`, except seed 0 is also backed by real-environment diagnostic eval because epoch 48 scored 90.0% over 10 episodes while epoch 61 scored 50.0%.
+    - Residual flow-WM best checkpoint is the lowest observed `validate/flow_loss` until enough real-environment eval data is available; deterministic `validate/pred_loss` is still not competitive at these early flow epochs.
+    - Checkpoint epoch means the filename `weights_epoch_N.pt`; Lightning metric rows are 0-indexed and can appear as epoch `N-1` for the checkpoint saved at `N`.
+  - Current native LeWM checkpoint table:
+    | Seed | Best checkpoint | Best metric / eval | Latest checkpoint | Latest metric |
+    | --- | --- | --- | --- | --- |
+    | 0 | `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_native_formal_20260605/checkpoints/pusht/wm_original_policy_original/seed_0/lewm/weights_epoch_48.pt` | `validate/pred_loss=0.0023916`; 10-episode diag eval `90.0%` | `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_native_formal_20260605/checkpoints/pusht/wm_original_policy_original/seed_0/lewm/weights_epoch_73.pt` | latest observed `validate/pred_loss=0.0223973` |
+    | 1 | `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_native_formal_20260605/checkpoints/pusht/wm_original_policy_original/seed_1/lewm/weights_epoch_70.pt` | `validate/pred_loss=0.0017662` | `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_native_formal_20260605/checkpoints/pusht/wm_original_policy_original/seed_1/lewm/weights_epoch_70.pt` | latest observed `validate/pred_loss=0.0017662` |
+    | 2 | `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_native_formal_20260605/checkpoints/pusht/wm_original_policy_original/seed_2/lewm/weights_epoch_71.pt` | `validate/pred_loss=0.0017847` | `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_native_formal_20260605/checkpoints/pusht/wm_original_policy_original/seed_2/lewm/weights_epoch_71.pt` | latest observed `validate/pred_loss=0.0017847` |
+  - Current residual flow-WM checkpoint table:
+    | Seed | Best checkpoint | Best metric | Latest checkpoint | Latest metric |
+    | --- | --- | --- | --- | --- |
+    | 0 | `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_flow_wm_formal_20260608/checkpoints/pusht/wm_flow_policy_original/seed_0/lewm_flow/weights_epoch_10.pt` | `validate/flow_loss=0.0642842`, `validate/pred_loss=1.1768` | `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_flow_wm_formal_20260608/checkpoints/pusht/wm_flow_policy_original/seed_0/lewm_flow/weights_epoch_10.pt` | latest observed `validate/flow_loss=0.0642842` |
+    | 1 | `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_flow_wm_formal_20260608/checkpoints/pusht/wm_flow_policy_original/seed_1/lewm_flow/weights_epoch_7.pt` | `validate/flow_loss=0.0812325`, `validate/pred_loss=1.1965` | `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_flow_wm_formal_20260608/checkpoints/pusht/wm_flow_policy_original/seed_1/lewm_flow/weights_epoch_7.pt` | latest observed `validate/flow_loss=0.0812325` |
+    | 2 | `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_flow_wm_formal_20260608/checkpoints/pusht/wm_flow_policy_original/seed_2/lewm_flow/weights_epoch_11.pt` | `validate/flow_loss=0.0650390`, `validate/pred_loss=1.1924` | `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_flow_wm_formal_20260608/checkpoints/pusht/wm_flow_policy_original/seed_2/lewm_flow/weights_epoch_11.pt` | latest observed `validate/flow_loss=0.0650390` |
+  - Eval alignment note:
+    - Pending native full50 eval jobs were submitted at the 15:00 snapshot: seed 0 epoch 48 job `9652297`, seed 1 epoch 68 job `9652298`, seed 2 epoch 70 job `9652299`.
+    - After that snapshot, native seed 1 produced checkpoint epoch 70 with a lower observed validation prediction loss, and seed 2 produced checkpoint epoch 71 with a lower observed validation prediction loss. These are now the metric-best checkpoints, but they do not yet have full50 real-environment eval jobs.
+    - Pending flow quick eval jobs target seed 0 epoch 10 job `9652300` and seed 2 epoch 11 job `9652301`; those match the current flow metric-best checkpoints for those seeds.

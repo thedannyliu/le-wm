@@ -123,6 +123,14 @@ def run(cfg: DictConfig):
         model = model.to(device)
         model = model.eval()
         model.requires_grad_(False)
+        if cfg.get("predictor_stochastic_sample") is not None and hasattr(
+            model.predictor, "stochastic_sample"
+        ):
+            model.predictor.stochastic_sample = bool(cfg.predictor_stochastic_sample)
+        if cfg.get("predictor_sample_steps") is not None and hasattr(
+            model.predictor, "sample_steps"
+        ):
+            model.predictor.sample_steps = int(cfg.predictor_sample_steps)
         model.interpolate_pos_encoding = True
         config = swm.PlanConfig(**cfg.plan_config)
         solver = hydra.utils.instantiate(cfg.solver, model=model)

@@ -54,6 +54,14 @@ if [ "${TASK}" = "cube" ]; then
   COMMON_ARGS+=(eval.dataset_name="${STABLEWM_HOME}/ogbench/cube_single_expert.h5")
 fi
 
+if [ -n "${PREDICTOR_STOCHASTIC_SAMPLE:-}" ]; then
+  COMMON_ARGS+=(+predictor_stochastic_sample="${PREDICTOR_STOCHASTIC_SAMPLE}")
+fi
+
+if [ -n "${PREDICTOR_SAMPLE_STEPS:-}" ]; then
+  COMMON_ARGS+=(+predictor_sample_steps="${PREDICTOR_SAMPLE_STEPS}")
+fi
+
 if [ "${POLICY_VARIANT}" = "flow" ]; then
   : "${ACTION_MODEL_PATH:?ACTION_MODEL_PATH is required for flow policy eval}"
   "${PY}" "${REPO}/eval.py" "${COMMON_ARGS[@]}" \

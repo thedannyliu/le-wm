@@ -666,3 +666,11 @@ Latest queue check:
     - Pending native full50 eval jobs were submitted at the 15:00 snapshot: seed 0 epoch 48 job `9652297`, seed 1 epoch 68 job `9652298`, seed 2 epoch 70 job `9652299`.
     - After that snapshot, native seed 1 produced checkpoint epoch 70 with a lower observed validation prediction loss, and seed 2 produced checkpoint epoch 71 with a lower observed validation prediction loss. These are now the metric-best checkpoints, but they do not yet have full50 real-environment eval jobs.
     - Pending flow quick eval jobs target seed 0 epoch 10 job `9652300` and seed 2 epoch 11 job `9652301`; those match the current flow metric-best checkpoints for those seeds.
+
+- PushT residual flow-WM quick eval results, 2026-06-08 15:28 EDT:
+  - Both A100 quick eval jobs completed cleanly with exit code `0:0`.
+  - Seed 0 checkpoint epoch 10, job `9652300`, policy variant `flow_quick_cem_e10`: 3 episodes, success rate `0.0%`, episode successes `[false, false, false]`, evaluation time `8.3071s`, W&B run `8x7r23ga`.
+  - Seed 2 checkpoint epoch 11, job `9652301`, policy variant `flow_quick_cem_e11`: 3 episodes, success rate `0.0%`, episode successes `[false, false, false]`, evaluation time `8.1870s`, W&B run `2q41gvi9`.
+  - Eval settings matched the intended quick sanity check: `eval.num_eval=3`, `eval.eval_budget=50`, `solver.num_samples=96`, `solver.n_steps=8`, `solver.topk=12`, W&B online logging enabled.
+  - Qualitative video check from contact sheets under `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/runtime/eval_frames/flow_quick_20260608`: the agent moves, but does not reliably move the T-block toward the goal and the control point often drifts away after contact. Treat this as a real flow-WM/planner quality failure, not an eval submission failure.
+  - Immediate interpretation: flow optimization is still numerically healthy, but early residual flow-WM checkpoints are not usable with the current LeWM CEM interface. Continue training for trend data, but prioritize checking the flow rollout/sampling semantics and planner objective before spending full-budget eval on these early checkpoints.

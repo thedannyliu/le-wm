@@ -821,3 +821,33 @@ Latest queue check:
       - `9747860`, native seed 2 flow-policy eval repair.
       - Record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_native_formal_20260605/job_records/repair_action_flow_eval_20260609_143336.tsv`.
     - Caveat: these repaired flow-policy evals use best-so-far action-flow checkpoints written before preemption, not complete 20-epoch action-flow training.
+
+- PushT monitoring and endpoint quick evals, 2026-06-09 16:59 EDT:
+  - Active endpoint-aligned flow-WM training:
+    - Running: seed 0 job `9744344`, seed 1 job `9745373`, seed 2 job `9736191`.
+    - Latest observed endpoint metrics:
+      | Seed | Latest epoch row | `validate/pred_loss` / endpoint | `validate/flow_loss` | Best endpoint row |
+      | --- | --- | --- | --- | --- |
+      | 0 | 11 | `0.008702` | `0.061655` | epoch 10 |
+      | 1 | 9 | `0.010624` | `0.061616` | epoch 8 |
+      | 2 | 9 | `0.010841` | `0.076098` | epoch 8 |
+    - Endpoint loss remains far below the original flow-WM deterministic prediction loss around `1.2`, so the objective-alignment change is still behaving as intended.
+  - Native final-checkpoint CEM eval update:
+    - Seed 1 epoch 100 job `9745538` completed with success rate `82.0%`.
+    - Current final-checkpoint CEM results are seed 0 `6.0%`, seed 1 `82.0%`, seed 2 `86.0%`.
+    - Reporting should still use seed 0 epoch 48 (`88.0%`) rather than seed 0 epoch 100.
+  - Native action-flow status:
+    - Seed 1 action-flow job `9745537` is running.
+    - Seed 1 dependent flow-policy eval `9745540` remains pending on `afterok:9745537`.
+    - Repair evals for seed 0 and seed 2, jobs `9747859` and `9747860`, remain pending on H100 priority.
+  - Submitted endpoint-flow quick real-environment evals on A100/embers with reduced CEM (`eval.num_eval=3`, `solver.num_samples=96`, `solver.n_steps=8`, `solver.topk=12`), all pending on priority:
+    - Seed 0 checkpoint epoch 11: job `9757983`, variant `flow_endpoint_quick_cem_e11_s0`.
+    - Seed 1 checkpoint epoch 9: job `9757985`, variant `flow_endpoint_quick_cem_e9_s1`.
+    - Seed 2 checkpoint epoch 9: job `9757986`, variant `flow_endpoint_quick_cem_e9_s2`.
+    - Record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_flow_endpoint_formal_20260609/job_records/quick_eval_endpoint_20260609_165830.tsv`.
+  - Submitted endpoint-flow cost-ranking diagnostics on A100/embers, all pending on priority:
+    - Seed 0 checkpoint epoch 11: job `9758072`, variant `cost_rank_flow_endpoint_s0_e11`.
+    - Seed 1 checkpoint epoch 9: job `9758073`, variant `cost_rank_flow_endpoint_s1_e9`.
+    - Seed 2 checkpoint epoch 9: job `9758075`, variant `cost_rank_flow_endpoint_s2_e9`.
+    - Record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_cost_diagnostics_20260609/job_records/submit_endpoint_cost_rank_20260609_165918.tsv`.
+  - Earlier empty quick-eval record from a failed local shell submission attempt was removed; the retained record is the one above with the three actual Slurm job IDs.

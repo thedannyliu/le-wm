@@ -865,3 +865,28 @@ Latest queue check:
     - Training-side hypothesis is supported: endpoint loss makes deterministic prediction align with CEM input (`validate/pred_loss` around `0.009-0.011`, versus around `1.2` for original flow-WM).
     - Real-environment hypothesis is not yet supported: the first completed quick eval is still `0/3`.
     - Need at least seed 1/2 quick evals and cost-ranking diagnostics before deciding whether endpoint alignment helps planning or merely improves one-step MSE.
+
+- PushT same-epoch flow vs MLP comparison, 2026-06-09 17:40 EDT:
+  - Same checkpoint-epoch comparison uses the validation row immediately before the checkpoint filename epoch because checkpoint `weights_epoch_N.pt` corresponds to training through metric row `N-1`.
+  - Deterministic one-step prediction loss at matched early epochs:
+    | Seed / checkpoint | Native MLP `validate/pred_loss` | Original flow `validate/pred_loss` | Endpoint-flow `validate/pred_loss` |
+    | --- | --- | --- | --- |
+    | seed 0 / epoch 11 | `0.004528` | `1.180684` | `0.008702` |
+    | seed 1 / epoch 9 | `0.005101` | `1.170925` | `0.010624` |
+    | seed 2 / epoch 9 | `0.006006` | `1.215889` | `0.010841` |
+  - Matched-epoch interpretation:
+    - Native MLP is still about `2x` better than endpoint-flow on deterministic one-step MSE at these early epochs.
+    - Endpoint-flow is about `100x` better than the original flow-WM on deterministic one-step MSE.
+    - Original flow optimizes `flow_loss`, which drops, but its deterministic prediction path remains unusable for CEM-style rollout at matched epochs.
+  - Endpoint-flow quick real-environment evals now available:
+    - seed 0 epoch 11, L40S job `9759953`: `0/3`.
+    - seed 1 epoch 9, H200 job `9760053`: `2/3`.
+    - seed 2 epoch 9, H200 job `9760054`: `0/3`.
+    - Aggregate: `2/9`, success rate `22.2%`.
+  - Original flow-WM quick evals at similar epochs were `0/3` for seed 0 epoch 10, seed 1 epoch 11, and seed 2 epoch 11; original flow-WM had one later full-CEM outlier at seed 2 epoch 14 with `1/10`.
+  - Native MLP quick evals at early checkpoints were much stronger: seed 0 epoch 35 `3/3`, seed 1 epoch 28 `2/3`, seed 2 epoch 33 `2/3`; native medium-CEM 10-episode evals at those checkpoints were `100%`, `90%`, and `80%`.
+  - Current conclusion:
+    - The endpoint-flow direction validates the initial diagnosis that pure flow-matching loss was misaligned with deterministic LeWM/CEM rollout.
+    - It has not closed the gap to native MLP under the original pipeline; real-environment success is better than original flow-WM in one seed but still far below native MLP.
+    - Endpoint alignment is a useful repair direction, but not sufficient by itself. Next diagnostic remains cost-ranking (`9758072`, `9758073`, `9758075`) to see whether the planner cost surface improved in the successful seed only or broadly.
+  - Canceled duplicate A100 endpoint quick eval jobs `9757983`, `9757985`, and `9757986` after H200/L40S backup jobs produced the needed quick eval results.

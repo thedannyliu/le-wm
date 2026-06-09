@@ -2,8 +2,6 @@ import os
 
 os.environ["MUJOCO_GL"] = "egl"
 
-from pathlib import Path
-
 import hydra
 import numpy as np
 import stable_pretraining as spt
@@ -15,7 +13,13 @@ from sklearn import preprocessing
 from torchvision.transforms import v2 as transforms
 
 from eval import get_dataset
-from experiment_logging import append_jsonl, get_run_dir, serializable, wandb_init_kwargs, write_run_files
+from experiment_logging import (
+    append_jsonl,
+    get_run_dir,
+    serializable,
+    wandb_init_kwargs,
+    write_run_files,
+)
 
 
 def img_transform(cfg):
@@ -98,6 +102,20 @@ def make_info(dataset, start_indices, cfg, policy):
     return policy._prepare_info(raw)
 
 
+def expand_info_for_candidates(info, num_candidates, device):
+    expanded = {}
+    for key, value in info.items():
+        if torch.is_tensor(value):
+            expanded[key] = value.to(device).unsqueeze(1).expand(
+                value.size(0),
+                num_candidates,
+                *value.shape[1:],
+            )
+        else:
+            expanded[key] = value
+    return expanded
+
+
 @hydra.main(version_base=None, config_path="./config/eval", config_name="pusht")
 def run(cfg: DictConfig):
     torch.set_grad_enabled(False)
@@ -120,7 +138,6 @@ def run(cfg: DictConfig):
 
     start_indices = valid_eval_indices(cfg, dataset)
     info = make_info(dataset, start_indices, cfg, policy)
-    info = {k: v.to(device) if torch.is_tensor(v) else v for k, v in info.items()}
 
     expert = make_action_chunks(dataset, start_indices, cfg, processors).to(device)
     num_random = int(cfg.diagnostic.num_random)
@@ -136,6 +153,7 @@ def run(cfg: DictConfig):
     )
     zero = torch.zeros_like(expert[:, None])
     candidates = torch.cat([expert[:, None], zero, random_actions], dim=1)
+    info = expand_info_for_candidates(info, candidates.size(1), device)
 
     costs = model.get_cost(info, candidates).detach().float().cpu()
     expert_cost = costs[:, 0]

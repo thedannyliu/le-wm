@@ -790,3 +790,34 @@ Latest queue check:
     - Seed 1 train `9703636`, supervisor `9703637`.
     - Seed 2 train `9703638`, supervisor `9703639`.
     - Record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_flow_endpoint_formal_20260609/job_records/submit_20260609_032722.tsv`.
+
+- PushT monitoring and repairs, 2026-06-09 14:34 EDT:
+  - Cost-ranking diagnostic jobs `9703631`, `9703632`, and `9703633` failed quickly with
+    `ValueError: not enough values to unpack (expected 4, got 3)` inside ViT goal encoding.
+    Root cause: diagnostic info tensors were passed to `model.get_cost(...)` without the solver sample dimension used by the official CEM path.
+  - Fixed the diagnostic in commit `f247281` by expanding prepared info tensors to `(batch, candidates, time, ...)`, matching the official solver-to-`get_cost` call shape.
+  - Resubmitted fixed cost-ranking diagnostics on A100/embers, all pending on priority:
+    - `9747692`, native seed 2 epoch 75, variant `cost_rank_original_s2_e75_fix1`.
+    - `9747694`, flow seed 2 epoch 17, variant `cost_rank_flow_s2_e17_fix1`.
+    - `9747696`, flow seed 2 epoch 24, variant `cost_rank_flow_s2_e24_fix1`.
+    - Record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_cost_diagnostics_20260609/job_records/resubmit_shape_fix_20260609_143139.tsv`.
+  - Endpoint-aligned flow-WM training is active and resumed correctly after preemption/timeout:
+    - Running: seed 0 job `9744344`, seed 2 job `9736191`.
+    - Pending on H100 priority: seed 1 job `9745373`.
+    - Latest observed metrics:
+      | Seed | Latest epoch row | `validate/pred_loss` / endpoint | `validate/flow_loss` | Checkpoints present |
+      | --- | --- | --- | --- | --- |
+      | 0 | 9 | `0.010692` | `0.067204` | epochs 1-9 |
+      | 1 | 7 | `0.012844` | `0.068248` | epochs 1-7 |
+      | 2 | 7 | `0.014015` | `0.080670` | epochs 1-7 |
+    - This is a strong early sign that endpoint alignment is doing what it was intended to do: deterministic rollout loss is around `0.01-0.014`, while the original residual flow-WM had deterministic `validate/pred_loss` around `1.2`.
+  - Native LeWM final-checkpoint evals triggered by supervisors:
+    - Seed 0 epoch 100 job `9736954`: success rate `6.0%`; this confirms seed 0 final checkpoint is severely degraded and should not replace the earlier reporting checkpoint epoch 48.
+    - Seed 2 epoch 100 job `9738938`: success rate `86.0%`, close to earlier seed 2 full50 values.
+  - Native action-flow policy repairs:
+    - Action-flow jobs `9736953` and `9738936` for native seeds 0 and 2 were preempted, causing dependent flow-policy eval jobs `9736956` and `9738939` to become `DependencyNeverSatisfied`.
+    - Both action-flow jobs had already written `action_flow.pt`, so the stuck eval jobs were canceled and replacement evals were submitted without the dead dependency:
+      - `9747859`, native seed 0 flow-policy eval repair.
+      - `9747860`, native seed 2 flow-policy eval repair.
+      - Record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_native_formal_20260605/job_records/repair_action_flow_eval_20260609_143336.tsv`.
+    - Caveat: these repaired flow-policy evals use best-so-far action-flow checkpoints written before preemption, not complete 20-epoch action-flow training.

@@ -851,3 +851,17 @@ Latest queue check:
     - Seed 2 checkpoint epoch 9: job `9758075`, variant `cost_rank_flow_endpoint_s2_e9`.
     - Record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_cost_diagnostics_20260609/job_records/submit_endpoint_cost_rank_20260609_165918.tsv`.
   - Earlier empty quick-eval record from a failed local shell submission attempt was removed; the retained record is the one above with the three actual Slurm job IDs.
+
+- PushT endpoint quick-result check, 2026-06-09 17:31 EDT:
+  - Endpoint quick real-environment result available so far:
+    - L40S backup seed 0 checkpoint epoch 11, job `9759953`, variant `flow_endpoint_quick_cem_l40s_e11_s0`: success rate `0.0%` over 3 episodes.
+  - L40S backup jobs for seed 1 and seed 2, `9759954` and `9759955`, failed before eval with `RuntimeError: The NVIDIA driver on your system is too old`; treat these as infrastructure failures, not model failures.
+  - A100 quick eval jobs `9757983`, `9757985`, and `9757986` remain pending on priority.
+  - Submitted H200 backup quick evals for the two L40S driver-failure seeds:
+    - `9760053`, seed 1 checkpoint epoch 9, variant `flow_endpoint_quick_cem_h200_e9_s1`.
+    - `9760054`, seed 2 checkpoint epoch 9, variant `flow_endpoint_quick_cem_h200_e9_s2`.
+    - Record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_flow_endpoint_formal_20260609/job_records/quick_eval_endpoint_h200_backup_20260609_173053.tsv`.
+  - Current interpretation:
+    - Training-side hypothesis is supported: endpoint loss makes deterministic prediction align with CEM input (`validate/pred_loss` around `0.009-0.011`, versus around `1.2` for original flow-WM).
+    - Real-environment hypothesis is not yet supported: the first completed quick eval is still `0/3`.
+    - Need at least seed 1/2 quick evals and cost-ranking diagnostics before deciding whether endpoint alignment helps planning or merely improves one-step MSE.

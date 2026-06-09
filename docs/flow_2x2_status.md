@@ -724,3 +724,20 @@ Latest queue check:
     - Job records:
       - `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_flow_wm_formal_20260608/job_records/fullcem_diag_20260608_195201.tsv`.
       - `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_flow_wm_formal_20260608/job_records/stochastic_eval_diag_20260608_195528.tsv`.
+
+- PushT flow diagnostic results and next evals, 2026-06-08 21:00 EDT:
+  - Diagnostic eval jobs completed cleanly:
+    - Full-CEM flow seed 2 checkpoint epoch 14, job `9676877`: 10 episodes, success rate `10.0%`, episode successes `[false, false, false, false, false, false, false, false, true, false]`.
+    - Stochastic predictor quick eval seed 2 checkpoint epoch 14, job `9677090`: 3 episodes, success rate `0.0%`, episode successes `[false, false, false]`.
+  - Interpretation:
+    - Full CEM can occasionally recover a success from the flow-WM, so the failure is not a pure eval crash or action-space wiring bug.
+    - The success rate remains far below native LeWM (`80-88%` full50), and stochastic predictor sampling did not improve quick eval. Continue treating the main issue as flow rollout quality / deterministic predictor semantics under CEM.
+  - Latest flow validation has continued improving in `validate/flow_loss`, while deterministic prediction loss remains around `1.2`:
+    - Seed 0 checkpoint epoch 16: `validate/flow_loss=0.0589514`, `validate/pred_loss=1.2324`.
+    - Seed 1 checkpoint epoch 13: `validate/flow_loss=0.0679934`, `validate/pred_loss=1.2044`.
+    - Seed 2 checkpoint epoch 17: `validate/flow_loss=0.0570019`, `validate/pred_loss=1.2041`.
+  - Submitted later-checkpoint full-CEM 10-episode evals on A100/embers; all are pending on priority:
+    - Seed 0 checkpoint epoch 16, job `9681908`, variant `flow_fullcem10_e16_s0`.
+    - Seed 1 checkpoint epoch 13, job `9681910`, variant `flow_fullcem10_e13_s1`.
+    - Seed 2 checkpoint epoch 17, job `9681911`, variant `flow_fullcem10_e17_s2`.
+    - Job record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_flow_wm_formal_20260608/job_records/fullcem_later_20260608_205959.tsv`.

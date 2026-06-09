@@ -741,3 +741,27 @@ Latest queue check:
     - Seed 1 checkpoint epoch 13, job `9681910`, variant `flow_fullcem10_e13_s1`.
     - Seed 2 checkpoint epoch 17, job `9681911`, variant `flow_fullcem10_e17_s2`.
     - Job record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_flow_wm_formal_20260608/job_records/fullcem_later_20260608_205959.tsv`.
+
+- PushT overnight monitoring, 2026-06-09 02:58 EDT:
+  - Flow later-checkpoint full-CEM 10-episode evals completed cleanly:
+    - Seed 0 checkpoint epoch 16, job `9681908`: success rate `0.0%`, episode successes all false.
+    - Seed 1 checkpoint epoch 13, job `9681910`: success rate `0.0%`, episode successes all false.
+    - Seed 2 checkpoint epoch 17, job `9681911`: success rate `0.0%`, episode successes all false.
+  - Flow interpretation update:
+    - The earlier seed 2 epoch 14 full-CEM result had a single success (`1/10`), but later checkpoints at epochs 16/13/17 all failed under the same full-CEM settings.
+    - `validate/flow_loss` continues to improve, but real-environment success does not track it. Current evidence suggests the residual flow objective is not aligned with the LeWM CEM rollout/cost interface, not that the eval jobs are broken.
+  - Latest flow validation:
+    - Seed 0 checkpoint epoch 22: `validate/flow_loss=0.0542554`, `validate/pred_loss=1.2247`.
+    - Seed 1 checkpoint epoch 19: `validate/flow_loss=0.0630558`, `validate/pred_loss=1.2209`.
+    - Seed 2 checkpoint epoch 24: latest `validate/flow_loss=0.0533679`, `validate/pred_loss=1.2078`; best observed flow loss at checkpoint epoch 23 is `0.0527222`.
+  - Latest native validation:
+    - Seed 0 checkpoint epoch 88 remains degraded (`validate/pred_loss=0.1915263`); keep seed 0 checkpoint epoch 48 for reporting.
+    - Seed 1 metric-best is checkpoint epoch 83 (`validate/pred_loss=0.0016117`).
+    - Seed 2 metric-best is checkpoint epoch 86 (`validate/pred_loss=0.0015598`).
+  - Submitted native latest metric-best full50 evals on A100/embers; both are pending on priority:
+    - Seed 1 checkpoint epoch 83, job `9702390`, variant `original_full50_e83`.
+    - Seed 2 checkpoint epoch 86, job `9702392`, variant `original_full50_e86`.
+    - Job record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_native_formal_20260605/job_records/full_eval_latest_20260609_025819.tsv`.
+  - Active training:
+    - Six PushT training jobs are running on H100: native seeds 0/1/2 and flow seeds 0/1/2.
+    - Recent preemptions/timeouts were handled by supervisors. Active log scan found no OOM, traceback, W&B failure, or config error; only missing-`pynvml` GPU monitor warnings.

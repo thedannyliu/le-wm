@@ -772,3 +772,21 @@ Latest queue check:
     - endpoint-aligned residual flow WM with `loss.flow_pred.weight=0.1`.
   - Formal endpoint-flow runs must follow the original PushT LeWM train/eval/supervisor pipeline, changing only the WM predictor/objective variant.
   - Cost-ranking jobs are diagnostic-only and do not replace real-environment PushT eval.
+
+- PushT flow-WM follow-up submission, 2026-06-09 03:27 EDT:
+  - Code/docs commit: `d724177`, pushed to `origin/exp/flow-2x2-pusht-cube`.
+  - Validation before submission:
+    - `.conda/lewm-flow-2x2/bin/python -m py_compile train.py module.py eval.py diagnose_cost_ranking.py`.
+    - `bash -n scripts/slurm_flow_2x2_train.sbatch scripts/slurm_flow_2x2_supervisor.sbatch scripts/slurm_pusht_cost_ranking_diag.sbatch scripts/submit_pusht_flow_endpoint_formal.sh`.
+    - `git diff --check`.
+    - Hydra compose smoke accepted `data=pusht model=lewm_flow loss.flow_pred.weight=0.1`.
+  - Submitted cost-ranking diagnostics on A100/embers, all pending on priority at submission check:
+    - `9703631`, native seed 2 epoch 75, variant `cost_rank_original_s2_e75`.
+    - `9703632`, flow seed 2 epoch 17, variant `cost_rank_flow_s2_e17`.
+    - `9703633`, flow seed 2 epoch 24, variant `cost_rank_flow_s2_e24`.
+    - Record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_cost_diagnostics_20260609/job_records/submit_20260609_032722.tsv`.
+  - Submitted endpoint-aligned flow-WM formal PushT training on H100/embers with `FLOW_PRED_LOSS_WEIGHT=0.1`, all pending on priority at submission check:
+    - Seed 0 train `9703634`, supervisor `9703635`.
+    - Seed 1 train `9703636`, supervisor `9703637`.
+    - Seed 2 train `9703638`, supervisor `9703639`.
+    - Record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_flow_endpoint_formal_20260609/job_records/submit_20260609_032722.tsv`.

@@ -765,3 +765,10 @@ Latest queue check:
   - Active training:
     - Six PushT training jobs are running on H100: native seeds 0/1/2 and flow seeds 0/1/2.
     - Recent preemptions/timeouts were handled by supervisors. Active log scan found no OOM, traceback, W&B failure, or config error; only missing-`pynvml` GPU monitor warnings.
+
+- PushT flow-WM follow-up plan, 2026-06-09 03:24 EDT:
+  - Documented two follow-ups in `docs/flow_wm_followups_20260609.md`:
+    - cost-ranking diagnostic using the same LeWM eval cost path;
+    - endpoint-aligned residual flow WM with `loss.flow_pred.weight=0.1`.
+  - Formal endpoint-flow runs must follow the original PushT LeWM train/eval/supervisor pipeline, changing only the WM predictor/objective variant.
+  - Cost-ranking jobs are diagnostic-only and do not replace real-environment PushT eval.

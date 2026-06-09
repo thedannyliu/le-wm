@@ -57,15 +57,21 @@ def lejepa_forward(self, batch, stage, cfg):
     # LeWM loss
     if is_flow_predictor:
         output["flow_loss"] = self.model.predictor.flow_loss(ctx_emb, ctx_act, tgt_emb)
-        with torch.no_grad():
+        flow_pred_weight = cfg.loss.get("flow_pred", {}).get("weight", 0.0)
+        pred_context = torch.enable_grad() if flow_pred_weight else torch.no_grad()
+        with pred_context:
             pred_emb = self.model.predict(ctx_emb, ctx_act)
             output["pred_loss"] = (pred_emb - tgt_emb).pow(2).mean()
+        if flow_pred_weight:
+            output["endpoint_loss"] = output["pred_loss"]
     else:
         pred_emb = self.model.predict(ctx_emb, ctx_act) # pred
         output["pred_loss"] = (pred_emb - tgt_emb).pow(2).mean()
 
     output["sigreg_loss"]= self.sigreg(emb.transpose(0, 1))
     prediction_objective = output.get("flow_loss", output["pred_loss"])
+    if is_flow_predictor:
+        prediction_objective = prediction_objective + cfg.loss.get("flow_pred", {}).get("weight", 0.0) * output["pred_loss"]
     output["loss"] = prediction_objective + lambd * output["sigreg_loss"]
 
     losses_dict = {f"{stage}/{k}": v.detach() for k, v in output.items() if "loss" in k}

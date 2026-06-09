@@ -394,7 +394,6 @@ class ConditionalFlowPredictor(nn.Module):
         velocity_pred = self.vector_field(ctx, act, noisy, t)
         return F.mse_loss(velocity_pred, velocity_target)
 
-    @torch.no_grad()
     def sample(self, ctx, act, steps=None, stochastic=None):
         steps = steps or self.sample_steps
         stochastic = self.stochastic_sample if stochastic is None else stochastic

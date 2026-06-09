@@ -56,6 +56,10 @@ if [ "${TASK}" = "cube" ]; then
   EXTRA_ARGS+=(data.dataset.name="${STABLEWM_HOME}/ogbench/cube_single_expert.h5")
 fi
 
+if [ -n "${FLOW_PRED_LOSS_WEIGHT:-}" ]; then
+  EXTRA_ARGS+=(loss.flow_pred.weight="${FLOW_PRED_LOSS_WEIGHT}")
+fi
+
 "${PY}" "${REPO}/train.py" \
   data="${DATA}" \
   model="${MODEL}" \

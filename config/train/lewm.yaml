@@ -59,3 +59,5 @@ loss:
     kwargs:
       knots: 17
       num_proj: 1024
+  flow_pred:
+    weight: 0.0

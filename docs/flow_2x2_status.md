@@ -956,3 +956,36 @@ Latest queue check:
     - Record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_flow_endpoint_formal_20260609/job_records/quick_eval_endpoint_latest_pathfix_20260609_213015.tsv`.
   - Cost-ranking diagnostics remain pending on A100 priority; no diagnostic result is available yet.
   - Repo root check found no `wandb/`, `outputs/`, or `multirun` directories.
+
+- PushT monitoring and follow-up, 2026-06-10 02:55 EDT:
+  - Endpoint-flow training continues under the supervisor chain:
+    - Running: seed 0 job `9772192`, seed 2 job `9765420`.
+    - Pending continuation after preemption: seed 1 job `9778779`.
+    - Latest endpoint metrics: seed 0 epoch row 18 `validate/pred_loss=0.007322`, seed 1 epoch row 16 `0.007715`, seed 2 epoch row 16 `0.007355`.
+  - Corrected endpoint quick evals completed:
+    - `9768186`, seed 0 epoch 14: `1/3`, success rate `33.3%`.
+    - `9768188`, seed 1 epoch 12: `1/3`, success rate `33.3%`.
+    - `9768189`, seed 2 epoch 12: `0/3`, success rate `0.0%`.
+    - Combined with earlier quick evals, the best endpoint quick result remains seed 1 epoch 9 at `2/3`; later lower prediction loss did not translate into better quick real-env success.
+  - Cost-ranking diagnostics completed and support the same interpretation:
+    | Model / checkpoint | Mean expert rank | Random-better fraction | Real-env quick/full context |
+    | --- | --- | --- | --- |
+    | Native MLP seed 2 epoch 75 | `1.0` | `0.0000` | strong CEM baseline, `88%` full50 |
+    | Original flow seed 2 epoch 17 | `56.75` | `0.4302` | poor, `0/10` full-CEM at epoch 17 |
+    | Original flow seed 2 epoch 24 | `65.56` | `0.5015` | near random cost ranking |
+    | Endpoint-flow seed 1 epoch 9 | `1.125` | `0.0010` | best endpoint quick result, `2/3` |
+    | Endpoint-flow seed 0 epoch 11 | `7.875` | `0.0527` | weak quick result, `0/3` |
+    | Endpoint-flow seed 2 epoch 9 | `10.4375` | `0.0728` | weak quick result, `0/3` |
+    - Insight: endpoint alignment fixes the worst cost-ranking failure of the original flow-WM, especially for seed 1, but the real-env gap to native MLP remains.
+  - Native MLP + action-flow seed 1 repair:
+    - Action-flow job `9745537` timed out but wrote `action_flow.pt`.
+    - Dead dependent eval `9745540` was canceled and replaced with H200 eval job `9779210`, no dependency.
+    - Record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_native_formal_20260605/job_records/repair_action_flow_eval_seed1_20260610_025410.tsv`.
+  - Submitted endpoint medium10 full-CEM evals to reduce 3-episode quick-eval noise:
+    - `9779221`, seed 0 epoch 14, variant `flow_endpoint_medium10_fullcem_e14_s0_latest_quick_1of3`.
+    - `9779222`, seed 1 epoch 9, variant `flow_endpoint_medium10_fullcem_e9_s1_early_quick_2of3_costbest`.
+    - `9779223`, seed 1 epoch 12, variant `flow_endpoint_medium10_fullcem_e12_s1_latest_quick_1of3`.
+    - `9779224`, seed 2 epoch 12, variant `flow_endpoint_medium10_fullcem_e12_s2_latest_quick_0of3`.
+    - Record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_flow_endpoint_formal_20260609/job_records/medium_eval_endpoint_fullcem_20260610_025437.tsv`.
+  - Original residual flow-WM remains misaligned despite training progress: latest deterministic `validate/pred_loss` is still around `1.23`, while endpoint-flow is around `0.007-0.008`.
+  - Repo root check found no `wandb/`, `outputs/`, or `multirun` directories.

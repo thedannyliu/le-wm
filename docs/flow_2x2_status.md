@@ -989,3 +989,27 @@ Latest queue check:
     - Record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_flow_endpoint_formal_20260609/job_records/medium_eval_endpoint_fullcem_20260610_025437.tsv`.
   - Original residual flow-WM remains misaligned despite training progress: latest deterministic `validate/pred_loss` is still around `1.23`, while endpoint-flow is around `0.007-0.008`.
   - Repo root check found no `wandb/`, `outputs/`, or `multirun` directories.
+
+- PushT monitoring and follow-up, 2026-06-10 04:13 EDT:
+  - Endpoint and original flow training chains are healthy:
+    - Running endpoint-flow jobs: seed 0 `9772192`, seed 1 `9778779`, seed 2 `9765420`.
+    - Running original flow jobs: seed 0 `9778808`, seed 1 `9778728`, seed 2 `9778754`.
+    - Endpoint seed 2 job `9765420` is near the 8-hour limit with supervisor `9765421` pending on the valid dependency.
+  - Native MLP + action-flow seed 1 eval completed after the dependency repair:
+    - `9779210`: `34/50`, success rate `68.0%`, using native final epoch 100 world model.
+    - Combined action-flow policy results are seed 0 `6.0%`, seed 1 `68.0%`, seed 2 `58.0%`; this remains below native CEM best checkpoints.
+  - Endpoint medium10 full-CEM evals completed so far:
+    - `9779221`, seed 0 epoch 14: `5/10`, success rate `50.0%`.
+    - `9779222`, seed 1 epoch 9: `0/10`, success rate `0.0%`.
+    - `9779223`, seed 1 epoch 12: `2/10`, success rate `20.0%`.
+    - `9779224`, seed 2 epoch 12, is still pending on H200 priority.
+    - Insight: the earlier seed 1 epoch 9 quick result `2/3` was likely noisy; seed 0 epoch 14 is currently the most promising endpoint checkpoint but is still below native MLP.
+  - Submitted endpoint full50 follow-up for the promising checkpoint:
+    - `9781663`, seed 0 epoch 14, variant `flow_endpoint_full50_e14_s0_medium10_50pct`.
+    - Record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_flow_endpoint_formal_20260609/job_records/full50_endpoint_followup_20260610_041219.tsv`.
+  - Submitted latest endpoint cost-ranking diagnostics to test whether lower validation prediction loss improves the planning cost surface:
+    - `9781664`, seed 0 epoch 19, variant `cost_rank_flow_endpoint_s0_e19_latest`.
+    - `9781665`, seed 1 epoch 17, variant `cost_rank_flow_endpoint_s1_e17_latest`.
+    - `9781666`, seed 2 epoch 17, variant `cost_rank_flow_endpoint_s2_e17_latest`.
+    - Record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_cost_diagnostics_20260609/job_records/latest_endpoint_cost_rank_20260610_041219.tsv`.
+  - Repo root check found no `wandb/`, `outputs/`, or `multirun` directories.

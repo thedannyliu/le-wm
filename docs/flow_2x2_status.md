@@ -1013,3 +1013,30 @@ Latest queue check:
     - `9781666`, seed 2 epoch 17, variant `cost_rank_flow_endpoint_s2_e17_latest`.
     - Record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_cost_diagnostics_20260609/job_records/latest_endpoint_cost_rank_20260610_041219.tsv`.
   - Repo root check found no `wandb/`, `outputs/`, or `multirun` directories.
+
+- PushT monitoring and follow-up, 2026-06-10 14:10 EDT:
+  - Training continuation remains healthy:
+    - Endpoint-flow jobs currently running: seed 0 `9795289`, seed 1 `9785898`, seed 2 `9794601`.
+    - Original flow jobs currently running: seed 0 `9795269`, seed 1 `9795187`, seed 2 `9795231`.
+    - Earlier endpoint-flow jobs `9765420` and `9772192` hit the 8-hour limit, and `9778779` was preempted; their supervisors completed and submitted the current running continuation jobs.
+  - Endpoint-flow latest training metrics:
+    | Seed | Latest epoch row | Step | `validate/pred_loss` | `validate/flow_loss` | Best pred row |
+    | --- | --- | --- | --- | --- | --- |
+    | 0 | 26 | 367300 | `0.005917` | `0.051471` | 24 (`0.005779`) |
+    | 1 | 23 | 332200 | `0.006551` | `0.048091` | 22 (`0.006551`) |
+    | 2 | 24 | 342050 | `0.006050` | `0.064956` | 23 (`0.006050`) |
+  - Completed follow-up evals:
+    - `9779224`, endpoint seed 2 epoch 12 medium10 full-CEM: `2/10`, success rate `20.0%`.
+    - `9781663`, endpoint seed 0 epoch 14 full50 full-CEM: `15/50`, success rate `30.0%`.
+    - This downgrades seed 0 epoch 14 from its earlier `5/10` medium result and confirms endpoint-flow is still well below native MLP.
+  - Completed latest endpoint cost-ranking diagnostics:
+    - seed 0 epoch 19: mean expert rank `4.3125`, random-better fraction `0.0254`; improved from seed 0 epoch 11 rank `7.875`.
+    - seed 1 epoch 17: mean expert rank `1.0625`, random-better fraction `0.0005`; still excellent and similar to seed 1 epoch 9.
+    - seed 2 epoch 17: mean expert rank `11.9375`, random-better fraction `0.0845`; worse than seed 2 epoch 9.
+    - Insight: validation prediction loss keeps improving, but cost-ranking and real-env success do not improve monotonically.
+  - Submitted latest endpoint medium10 full-CEM evals to test whether latest cost-ranking carries to real-env:
+    - `9796330`, seed 0 epoch 19, variant `flow_endpoint_medium10_fullcem_e19_s0_latest_cost_rank_improved`.
+    - `9796331`, seed 1 epoch 17, variant `flow_endpoint_medium10_fullcem_e17_s1_latest_cost_rank_best`.
+    - `9796332`, seed 2 epoch 17, variant `flow_endpoint_medium10_fullcem_e17_s2_latest_cost_rank_worse`.
+    - Record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_flow_endpoint_formal_20260609/job_records/medium_eval_endpoint_latest_20260610_140937.tsv`.
+  - Repo root check found no `wandb/`, `outputs/`, or `multirun` directories.

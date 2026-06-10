@@ -890,3 +890,36 @@ Latest queue check:
     - It has not closed the gap to native MLP under the original pipeline; real-environment success is better than original flow-WM in one seed but still far below native MLP.
     - Endpoint alignment is a useful repair direction, but not sufficient by itself. Next diagnostic remains cost-ranking (`9758072`, `9758073`, `9758075`) to see whether the planner cost surface improved in the successful seed only or broadly.
   - Canceled duplicate A100 endpoint quick eval jobs `9757983`, `9757985`, and `9757986` after H200/L40S backup jobs produced the needed quick eval results.
+
+- PushT monitoring and repair, 2026-06-09 20:10 EDT:
+  - Cost-ranking diagnostics and native action-flow eval repairs initially failed because JEPA cost expansion did not handle sampled/candidate prediction tensors shaped like `[B, candidates, T, D]` with goal tensors shaped like `[B, 1, D]`.
+  - Fixed goal broadcasting in `jepa.py` commit `3be1a86`; validation passed with `py_compile` for `jepa.py`, `diagnose_cost_ranking.py`, `flow_solver.py`, and `eval.py`, plus tensor-shape smokes for both `[B, 1, D]` and `[B, candidates, 1, D]` goals.
+  - Resubmitted fixed cost-ranking diagnostics, all pending on A100 priority:
+    - `9764823`, native MLP seed 2 epoch 75, variant `cost_rank_original_s2_e75_fix2`.
+    - `9764824`, original flow-WM seed 2 epoch 17, variant `cost_rank_flow_s2_e17_fix2`.
+    - `9764825`, original flow-WM seed 2 epoch 24, variant `cost_rank_flow_s2_e24_fix2`.
+    - `9764826`, endpoint-flow seed 0 epoch 11, variant `cost_rank_flow_endpoint_s0_e11_fix2`.
+    - Record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_cost_diagnostics_20260609/job_records/resubmit_cost_broadcast_fix_20260609_200727.tsv`.
+  - Endpoint cost diagnostics submitted before the code fix remain pending and should run with the fixed repo code when scheduled:
+    - `9758073`, endpoint-flow seed 1 epoch 9.
+    - `9758075`, endpoint-flow seed 2 epoch 9.
+  - Resubmitted native action-flow policy eval repairs after the same JEPA cost fix, both pending on H100 priority:
+    - `9764834`, native seed 0 flow-policy eval repair.
+    - `9764835`, native seed 2 flow-policy eval repair.
+    - Record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_native_formal_20260605/job_records/repair_action_flow_eval_costfix_20260609_200742.tsv`.
+  - Endpoint-flow training remains healthy:
+    | Seed | Active job | Latest epoch row | Step | `validate/pred_loss` | `validate/flow_loss` | Best endpoint row |
+    | --- | --- | --- | --- | --- | --- | --- |
+    | 0 | `9759942` | 13 | 185750 | `0.008272` | `0.060101` | 12 |
+    | 1 | `9759980` | 11 | 157850 | `0.009250` | `0.058428` | 10 |
+    | 2 | `9736191` | 11 | 162200 | `0.009319` | `0.071634` | 10 |
+  - Existing later endpoint checkpoints were found for seed 0 epoch 13, seed 1 epoch 11, and seed 2 epoch 11.
+  - Submitted later-checkpoint quick real-environment evals with reduced CEM (`eval.num_eval=3`, `solver.num_samples=96`, `solver.n_steps=8`, `solver.topk=12`):
+    - First submission jobs `9764891`, `9764892`, and `9764893` were canceled before start because the eval script did not yet route `EXPERIMENT_VARIANT` into Hydra, which could have mixed quick-eval metrics in the default eval directory.
+    - Added opt-in support in `scripts/slurm_flow_2x2_eval.sbatch` for `EXPERIMENT_VARIANT`, `WANDB_RUN_GROUP`, and `WANDB_NAME`; default formal eval behavior is unchanged.
+    - Replacement H100 jobs are pending on priority:
+      - `9764918`, seed 0 checkpoint epoch 13, variant `flow_endpoint_quick_cem_h100_later_e13_s0`.
+      - `9764919`, seed 1 checkpoint epoch 11, variant `flow_endpoint_quick_cem_h100_later_e11_s1`.
+      - `9764920`, seed 2 checkpoint epoch 11, variant `flow_endpoint_quick_cem_h100_later_e11_s2`.
+      - Record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_flow_endpoint_formal_20260609/job_records/quick_eval_endpoint_later_variantfix_20260609_201127.tsv`.
+  - Repo root check found no `wandb/`, `outputs/`, or `multirun` directories.

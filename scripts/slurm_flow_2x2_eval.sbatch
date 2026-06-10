@@ -50,6 +50,18 @@ COMMON_ARGS=(
   wandb.enabled=True
 )
 
+if [ -n "${EXPERIMENT_VARIANT:-}" ]; then
+  COMMON_ARGS+=(experiment.variant="${EXPERIMENT_VARIANT}")
+fi
+
+if [ -n "${WANDB_RUN_GROUP:-}" ]; then
+  COMMON_ARGS+=(wandb.config.group="${WANDB_RUN_GROUP}")
+fi
+
+if [ -n "${WANDB_NAME:-}" ]; then
+  COMMON_ARGS+=(wandb.config.name="${WANDB_NAME}")
+fi
+
 if [ "${TASK}" = "cube" ]; then
   COMMON_ARGS+=(eval.dataset_name="${STABLEWM_HOME}/ogbench/cube_single_expert.h5")
 fi

@@ -1040,3 +1040,21 @@ Latest queue check:
     - `9796332`, seed 2 epoch 17, variant `flow_endpoint_medium10_fullcem_e17_s2_latest_cost_rank_worse`.
     - Record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_flow_endpoint_formal_20260609/job_records/medium_eval_endpoint_latest_20260610_140937.tsv`.
   - Repo root check found no `wandb/`, `outputs/`, or `multirun` directories.
+
+- PushT monitoring, 2026-06-10 15:13 EDT:
+  - No new Slurm failures were found.
+  - Endpoint-flow training is still improving:
+    | Seed | Latest epoch row | Step | `validate/pred_loss` | `validate/flow_loss` | Best pred row |
+    | --- | --- | --- | --- | --- | --- |
+    | 0 | 27 | 387400 | `0.005747` | `0.051214` | 26 (`0.005747`) |
+    | 1 | 24 | 342750 | `0.006243` | `0.047539` | 23 (`0.006243`) |
+    | 2 | 25 | 355400 | `0.006138` | `0.064135` | 23 (`0.006050`) |
+  - Original residual flow-WM remains misaligned: latest deterministic `validate/pred_loss` is still about `1.24` for all three seeds despite continued training.
+  - Latest endpoint medium10 eval jobs `9796330`, `9796331`, and `9796332` remain pending on H200 priority.
+  - Submitted non-overwriting A100 backup medium10 evals for the same latest endpoint checkpoints:
+    - `9797486`, seed 0 epoch 19, variant `flow_endpoint_medium10_fullcem_a100_backup_e19_s0_latest_cost_rank_improved`.
+    - `9797487`, seed 1 epoch 17, variant `flow_endpoint_medium10_fullcem_a100_backup_e17_s1_latest_cost_rank_best`.
+    - `9797488`, seed 2 epoch 17, variant `flow_endpoint_medium10_fullcem_a100_backup_e17_s2_latest_cost_rank_worse`.
+    - Record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_flow_endpoint_formal_20260609/job_records/medium_eval_endpoint_latest_a100_backup_20260610_151246.tsv`.
+  - Endpoint seed 1 job `9785898` is near the 8-hour limit; supervisor `9785899` is pending on a valid dependency.
+  - Repo root check found no `wandb/`, `outputs/`, or `multirun` directories.

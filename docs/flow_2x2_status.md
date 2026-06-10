@@ -923,3 +923,36 @@ Latest queue check:
       - `9764920`, seed 2 checkpoint epoch 11, variant `flow_endpoint_quick_cem_h100_later_e11_s2`.
       - Record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_flow_endpoint_formal_20260609/job_records/quick_eval_endpoint_later_variantfix_20260609_201127.tsv`.
   - Repo root check found no `wandb/`, `outputs/`, or `multirun` directories.
+
+- PushT monitoring and repair, 2026-06-09 21:32 EDT:
+  - Endpoint-flow continuation is working:
+    - Previous chunks ended as expected under `embers`: seed 2 job `9736191` hit the 8-hour time limit, seed 0 job `9759942` and seed 1 job `9759980` were preempted.
+    - Their supervisors completed and submitted running H100 continuation chunks:
+      - seed 0: `9767223`, supervisor `9767225`.
+      - seed 1: `9767298`, supervisor `9767299`.
+      - seed 2: `9765420`, supervisor `9765421`.
+  - Endpoint-flow latest metrics continue to improve:
+    | Seed | Latest epoch row | Step | `validate/pred_loss` | `validate/flow_loss` |
+    | --- | --- | --- | --- | --- |
+    | 0 | 14 | 199000 | `0.007597` | `0.060210` |
+    | 1 | 12 | 172500 | `0.009011` | `0.057606` |
+    | 2 | 12 | 174450 | `0.008804` | `0.069398` |
+  - Original residual flow-WM is also continuing, but remains poorly aligned with deterministic CEM rollout:
+    | Seed | Latest epoch row | Step | `validate/pred_loss` | `validate/flow_loss` |
+    | --- | --- | --- | --- | --- |
+    | 0 | 42 | 588550 | `1.240094` | `0.045162` |
+    | 1 | 34 | 482700 | `1.236292` | `0.054489` |
+    | 2 | 40 | 571250 | `1.229844` | `0.044950` |
+    - Seed 0 job `9741350` timed out at 8 hours; supervisor `9741353` submitted continuation job `9768281` and supervisor `9768283`.
+  - Native MLP + action-flow policy eval repairs completed:
+    - seed 0 job `9764834`: `3/50`, success rate `6.0%`, using native final epoch 100 world model.
+    - seed 2 job `9764835`: `29/50`, success rate `58.0%`, using native final epoch 100 world model.
+    - These are below the native CEM policy results and do not support replacing CEM with the current action-flow policy.
+  - Later endpoint quick eval jobs `9764918`, `9764919`, and `9764920` failed before evaluation because the policy override included `checkpoints/pusht/...`; `stable_worldmodel.wm.utils.load_pretrained()` already prepends `checkpoint_cache_dir/checkpoints`, producing a bad doubled path.
+  - Resubmitted corrected H200 quick evals using latest available endpoint checkpoints and policy paths rooted at `pusht/...`:
+    - `9768186`, seed 0 checkpoint epoch 14, variant `flow_endpoint_quick_cem_h200_pathfix_e14_s0`.
+    - `9768188`, seed 1 checkpoint epoch 12, variant `flow_endpoint_quick_cem_h200_pathfix_e12_s1`.
+    - `9768189`, seed 2 checkpoint epoch 12, variant `flow_endpoint_quick_cem_h200_pathfix_e12_s2`.
+    - Record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_flow_endpoint_formal_20260609/job_records/quick_eval_endpoint_latest_pathfix_20260609_213015.tsv`.
+  - Cost-ranking diagnostics remain pending on A100 priority; no diagnostic result is available yet.
+  - Repo root check found no `wandb/`, `outputs/`, or `multirun` directories.

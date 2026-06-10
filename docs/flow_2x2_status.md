@@ -1058,3 +1058,24 @@ Latest queue check:
     - Record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_flow_endpoint_formal_20260609/job_records/medium_eval_endpoint_latest_a100_backup_20260610_151246.tsv`.
   - Endpoint seed 1 job `9785898` is near the 8-hour limit; supervisor `9785899` is pending on a valid dependency.
   - Repo root check found no `wandb/`, `outputs/`, or `multirun` directories.
+
+- PushT monitoring, 2026-06-10 17:04 EDT:
+  - No new application failures were found.
+  - Recent timeout/preemptions were handled by supervisors:
+    - Endpoint seed 1 `9785898` timed out; supervisor `9785899` submitted running continuation `9797913`.
+    - Endpoint seed 0 `9795289`, endpoint seed 2 `9794601`, original flow seed 1 `9795187`, and original flow seed 2 `9795231` were preempted; their supervisors completed and submitted replacement jobs.
+  - Current training queue:
+    - Running endpoint-flow: seed 1 `9797913`, seed 2 `9797808`.
+    - Pending endpoint-flow: seed 0 `9798360`.
+    - Running original flow: seed 0 `9795269`, seed 1 `9797608`.
+    - Pending original flow: seed 2 `9798459`.
+  - Latest endpoint training metrics continue to improve:
+    | Seed | Latest epoch row | Step | `validate/pred_loss` | `validate/flow_loss` | Best pred row |
+    | --- | --- | --- | --- | --- | --- |
+    | 0 | 28 | 402350 | `0.005664` | `0.050724` | 27 (`0.005664`) |
+    | 1 | 25 | 356750 | `0.006163` | `0.046458` | 24 (`0.006163`) |
+    | 2 | 26 | 373950 | `0.005692` | `0.062698` | 25 (`0.005692`) |
+  - Original residual flow-WM deterministic prediction loss remains around `1.23-1.25`; continued training has not fixed CEM rollout alignment.
+  - Latest endpoint medium10 evals remain pending on H200: `9796330`, `9796331`, `9796332`.
+  - A100 backup medium10 evals also remain pending: `9797486`, `9797487`, `9797488`.
+  - Repo root check found no `wandb/`, `outputs/`, or `multirun` directories.

@@ -1,6 +1,6 @@
 # LeWM Flow Progress Report
 
-Generated: 2026-06-10 EDT
+Generated: 2026-06-11 EDT
 
 Sources:
 
@@ -31,6 +31,13 @@ Scope: this report summarizes the LeWM experiments in this codebase. Debug runs,
 
 All success rates are reported as `Success rate (%)`. Mean and std are over the seed columns shown in the same row.
 
+Status labels:
+
+- `completed`: all seed columns shown in the row have finished for that protocol.
+- `single-seed completed`: only the listed seed has finished for that protocol.
+- `ongoing`: more training/eval jobs for this model family are still queued or running.
+- `only evaluated at epoch 100`: this controller has no selected-checkpoint eval yet; the row is not a best-checkpoint result.
+
 ## Conclusion & Insights
 
 **Main result:** native LeWM + CEM is still the strongest PushT pipeline. Flow-WM variants reveal useful failure modes, but they are not improvements yet.
@@ -41,8 +48,8 @@ All success rates are reported as `Success rate (%)`. Mean and std are over the 
 2. **Final epoch is not a safe checkpoint rule.**  
    At epoch 100, native seed 0 collapses to `6%` full50 while seeds 1/2 remain `82-86%`. The matching validation prediction loss also degrades badly for seed 0.
 
-3. **Action-flow proposal is faster at inference but weaker in success.**  
-   On epoch-100 native WMs, action-flow is `44.0 +/- 33.3%` full50 versus native CEM `58.0 +/- 45.1%`; it is faster per episode but not reliable.
+3. **Action-flow proposal is faster at inference, but we only evaluated it at epoch 100.**  
+   On epoch-100 native WMs, action-flow is `44.0 +/- 33.3%` full50 versus native CEM `58.0 +/- 45.1%`; it is faster per episode but this is not a best-checkpoint action-flow result.
 
 4. **Residual flow-WM fails despite low flow loss.**  
    Residual flow-WM gets `0.0 +/- 0.0%` on medium10. Its validation flow loss is low, but its endpoint/prediction loss and cost ranking are poor.
@@ -56,22 +63,22 @@ All success rates are reported as `Success rate (%)`. Mean and std are over the 
 
 Same task and eval protocol: PushT full50. The rows below all use the original native LeWM world model.
 
-| World model | Controller | Epoch s0 | Epoch s1 | Epoch s2 | Success s0 (%) | Success s1 (%) | Success s2 (%) | Mean +/- std (%) |
-| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Native LeWM | CEM | 48 | 83 | 75 | 88 | 86 | 88 | 87.3 +/- 1.2 |
-| Native LeWM | CEM | 100 | 100 | 100 | 6 | 82 | 86 | 58.0 +/- 45.1 |
-| Native LeWM | Action-flow proposal | 100 | 100 | 100 | 6 | 68 | 58 | 44.0 +/- 33.3 |
+| World model | Controller | Selection status | Run status | Epoch s0 | Epoch s1 | Epoch s2 | Success s0 (%) | Success s1 (%) | Success s2 (%) | Mean +/- std (%) |
+| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Native LeWM | CEM | best selected checkpoints | completed | 48 | 83 | 75 | 88 | 86 | 88 | 87.3 +/- 1.2 |
+| Native LeWM | CEM | final epoch baseline | completed | 100 | 100 | 100 | 6 | 82 | 86 | 58.0 +/- 45.1 |
+| Native LeWM | Action-flow proposal | only evaluated at epoch 100 | completed | 100 | 100 | 100 | 6 | 68 | 58 | 44.0 +/- 33.3 |
 
-Read: the first row is the fair native baseline for capability. The second row is a checkpoint-selection ablation. The third row tests whether the learned action-flow proposal can replace CEM on the same epoch-100 native WMs.
+Read: the first row is the fair native baseline for capability. The second row is a checkpoint-selection ablation. The third row tests whether the learned action-flow proposal can replace CEM on the same epoch-100 native WMs; it is not the best action-flow record because selected-checkpoint action-flow has not been run.
 
 ### Full50: Seed-0 Endpoint Flow Check
 
 Only seed 0 full50 is available for endpoint flow-WM, so this is a single-seed comparison rather than a 3-seed aggregate.
 
-| World model | Controller | Seed | Epoch | Success rate (%) | Eval time / episode (s) |
-| --- | --- | ---: | ---: | ---: | ---: |
-| Native LeWM | CEM | 0 | 48 | 88 | 1.35 |
-| Endpoint flow-WM | CEM | 0 | 14 | 30 | 5.56 |
+| World model | Controller | Selection status | Run status | Seed | Epoch | Success rate (%) | Eval time / episode (s) |
+| --- | --- | --- | --- | ---: | ---: | ---: | ---: |
+| Native LeWM | CEM | best selected checkpoint | completed | 0 | 48 | 88 | 1.35 |
+| Endpoint flow-WM | CEM | selected from medium10 screening | single-seed completed; more endpoint runs ongoing | 0 | 14 | 30 | 5.56 |
 
 Read: endpoint alignment improves over residual flow-WM, but seed 0 is still far below native LeWM and is slower at inference.
 
@@ -79,11 +86,11 @@ Read: endpoint alignment improves over residual flow-WM, but seed 0 is still far
 
 Same task, controller, and eval protocol: PushT medium10 with CEM. This table is for checkpoint screening, not final reporting.
 
-| World model | Epoch s0 | Epoch s1 | Epoch s2 | Success s0 (%) | Success s1 (%) | Success s2 (%) | Mean +/- std (%) |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Native LeWM | 35 | 28 | 33 | 100 | 90 | 80 | 90.0 +/- 10.0 |
-| Residual flow-WM | 16 | 13 | 17 | 0 | 0 | 0 | 0.0 +/- 0.0 |
-| Endpoint flow-WM | 14 | 12 | 12 | 50 | 20 | 20 | 30.0 +/- 17.3 |
+| World model | Selection status | Run status | Epoch s0 | Epoch s1 | Epoch s2 | Success s0 (%) | Success s1 (%) | Success s2 (%) | Mean +/- std (%) |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Native LeWM | screened checkpoints | completed | 35 | 28 | 33 | 100 | 90 | 80 | 90.0 +/- 10.0 |
+| Residual flow-WM | matched evaluated checkpoints | completed for listed medium10 evals; more residual flow training ongoing | 16 | 13 | 17 | 0 | 0 | 0 | 0.0 +/- 0.0 |
+| Endpoint flow-WM | screened checkpoints | completed for listed medium10 evals; more endpoint training/eval ongoing | 14 | 12 | 12 | 50 | 20 | 20 | 30.0 +/- 17.3 |
 
 Read: endpoint flow-WM is directionally better than residual flow-WM, but the gap to native LeWM is still large under the same medium10+CEM protocol.
 
@@ -132,6 +139,18 @@ xychart-beta
     y-axis "seconds / episode" 0 --> 11
     bar [1.31, 0.44, 9.98, 5.47]
 ```
+
+## Ongoing Runs
+
+Queue snapshot from 2026-06-11 EDT:
+
+| Run family | Seeds | Queue status | Why it matters |
+| --- | --- | --- | --- |
+| Residual flow-WM formal training | seed 0/1 running, seed 2 pending | ongoing | May update residual flow-WM training metrics, but current medium10 result is still 0%. |
+| Endpoint flow-WM formal training | seed 0/1/2 pending | ongoing | Needed before stronger endpoint full50 claims. |
+| Endpoint flow-WM medium eval backups | seed 0/1/2 pending | ongoing | May refine checkpoint screening for endpoint flow-WM. |
+
+Ongoing rows are not included in the completed-result means above.
 
 ## Planner-Cost Metrics
 

@@ -11,43 +11,39 @@ Sources:
 
 ## Conclusion & Insights
 
-- **Native LeWM is still the anchor.**
-  - Selected native LeWM + CEM reaches `87.3 +/- 1.2%` full50 success at `1.31s/episode`.
-  - Endpoint flow-WM is far lower: best completed full50 is seed 0 epoch 14 at `30%`; latest medium10 is `20.0 +/- 10.0%`.
+We are testing whether flow can improve LeWM by replacing the learned world-model dynamics while keeping the original PushT data, training loop, checkpointing, CEM planner, and real-environment eval pipeline fixed.
 
-- **The flow-WM failure is an objective/planner mismatch, not just an unfinished run.**
-  - Residual flow-WM reaches low flow loss (`0.0612`) but has very bad deterministic pred loss (`1.2075`) and `0%` medium10 success.
-  - CEM needs a stable deterministic multi-step cost surface; standard flow matching does not give that by itself.
+**Current answer: direct flow-WM replacement is not promising under the original LeWM/CEM interface.**
 
-- **Endpoint loss fixes the obvious one-step prediction problem, but not closed-loop control.**
-  - Endpoint pred loss improves from `0.0083 -> 0.0055 -> 0.0053`.
-  - Success does not improve: `30.0% -> 23.3% -> 20.0%`.
-  - This is the strongest signal that the next objective should be planner-cost aligned, not just lower endpoint MSE.
+- Native LeWM + CEM remains the anchor: `87.3 +/- 1.2%` full50 success at `1.31s/episode`.
+- Residual flow-WM is a clear failure mode: low flow loss (`0.0612`) but bad deterministic prediction (`1.2075`) and `0%` medium10 success.
+- Endpoint flow-WM repairs one-step prediction (`0.0083 -> 0.0055 -> 0.0053`) but not control (`30.0% -> 23.3% -> 20.0%`).
+- Runtime moves the same direction as performance moves against us: endpoint flow-WM is `~5.7x` slower than native selected CEM (`7.42s` vs `1.31s/episode`) while much less successful.
 
-- **Runtime is part of the scientific result.**
-  - Native CEM: `1.31s/episode` at `87.3%`.
-  - Endpoint flow-WM: `7.42s/episode` at `20.0%`.
-  - Residual flow-WM: `9.98s/episode` at `0%`.
-  - Current flow-WM is not Pareto-efficient.
+**Main insight:** the bottleneck is likely not model capacity or insufficient training time. The signal points to an interface mismatch: flow objectives can improve distributional or endpoint prediction, but CEM needs a deterministic, multi-step, action-conditional cost surface that ranks candidate action sequences correctly under closed-loop rollouts.
+
+**Research decision from current evidence:** do not keep scaling the same endpoint-flow WM as the main path. The next useful experiments should change the training signal or planner interface: planner-aware cost ranking/margin losses, multi-step rollout consistency on CEM-like action chunks, or uncertainty-aware CEM if we actually use flow samples during planning. A separate action-flow proposal is still worth testing because it can use flow where sampling is naturally useful while keeping the reliable native WM.
 
 ## Key Results
 
 `Pred loss` is validation next-latent MSE. `Train h` is logged wall-time from the first validation epoch to the evaluated checkpoint, averaged over seeds; it is not a clean hardware benchmark because jobs resume under `embers`.
 
-| Setting | Eval | Epochs s0/s1/s2 | Pred loss | Success (%) | Train h | Sec/episode | Read |
+Fair comparison boundary: all claims below are PushT-only and use the same LeWM data/eval pipeline. Full50 is the main metric. Medium10 is a faster screening metric; it is still informative here because the flow-WM gap is large, consistent across seeds, and supported by validation/cost diagnostics.
+
+| Setting | Eval | Epochs s0/s1/s2 | Pred loss | Success (%) | Train h | Sec/episode | Signal |
 | --- | --- | --- | ---: | ---: | ---: | ---: | --- |
-| Native LeWM + CEM, selected | full50 | 48 / 83 / 75 | `0.0019` | `87.3 +/- 1.2` | `61.3` | `1.31` | Best baseline. |
-| Native LeWM + CEM, final | full50 | 100 / 100 / 100 | `0.1053` | `58.0 +/- 45.1` | `85.8` | `1.43` | Final epoch is misleading. |
-| Native LeWM + action-flow, final | full50 | 100 / 100 / 100 | same WM | `44.0 +/- 33.3` | n/a | `0.44` | Fast, but unfair collapsed checkpoint. |
-| Native LeWM + CEM, early | medium10 | 35 / 28 / 33 | `0.0028` | `90.0 +/- 10.0` | `31.1` | `1.67` | Strong before 100 epochs. |
-| Residual flow-WM + CEM | medium10 | 16 / 13 / 17 | `1.2075` | `0.0 +/- 0.0` | `16.6` | `9.98` | Flow loss alone fails. |
-| Endpoint flow-WM + CEM, first | medium10 | 14 / 12 / 12 | `0.0083` | `30.0 +/- 17.3` | `16.7` | `5.47` | Partial repair. |
-| Endpoint flow-WM + CEM, later | medium10 | 30 / 28 / 28 | `0.0055` | `23.3 +/- 5.8` | `40.7` | `5.67` | Lower pred loss, no gain. |
-| Endpoint flow-WM + CEM, latest | medium10 | 34 / 32 / 33 | `0.0053` | `20.0 +/- 10.0` | `46.3` | `7.42` | Plateau confirmed. |
+| Native LeWM + CEM, selected | full50 | 48 / 83 / 75 | `0.0019` | `87.3 +/- 1.2` | `61.3` | `1.31` | Fair baseline anchor. |
+| Native LeWM + CEM, final | full50 | 100 / 100 / 100 | `0.1053` | `58.0 +/- 45.1` | `85.8` | `1.43` | Checkpoint selection matters. |
+| Native LeWM + action-flow, final | full50 | 100 / 100 / 100 | same WM | `44.0 +/- 33.3` | n/a | `0.44` | Fast but checkpoint-confounded. |
+| Native LeWM + CEM, early | medium10 | 35 / 28 / 33 | `0.0028` | `90.0 +/- 10.0` | `31.1` | `1.67` | Native learns useful planner cost early. |
+| Residual flow-WM + CEM | medium10 | 16 / 13 / 17 | `1.2075` | `0.0 +/- 0.0` | `16.6` | `9.98` | Flow loss does not expose a CEM-usable point prediction. |
+| Endpoint flow-WM + CEM, first | medium10 | 14 / 12 / 12 | `0.0083` | `30.0 +/- 17.3` | `16.7` | `5.47` | Endpoint target fixes only the first failure. |
+| Endpoint flow-WM + CEM, later | medium10 | 30 / 28 / 28 | `0.0055` | `23.3 +/- 5.8` | `40.7` | `5.67` | Better MSE does not become better control. |
+| Endpoint flow-WM + CEM, latest | medium10 | 34 / 32 / 33 | `0.0053` | `20.0 +/- 10.0` | `46.3` | `7.42` | Plateau; not an undertrained-model story. |
 
--> The key result is not just "flow-WM is worse"; it is worse while being slower, and the training metrics explain why.
+-> The useful result is causal direction, not just ranking: native LeWM succeeds when validation prediction and planner cost ranking agree; flow-WM can improve its own losses without producing a robust CEM cost surface.
 
-## LeWM Pipeline
+## Pipeline (w/ Diff)
 
 Algorithm: LeWM PushT Training and Evaluation Pipeline (`->` marks our modification)
 
@@ -170,7 +166,7 @@ Evaluation Pipeline:
 | Residual flow-WM | flow + SIGReg | medium10 | `1.2075` | `0.0` | `9.98` | Flow loss not usable by CEM. |
 | Endpoint flow-WM | flow + endpoint + SIGReg | medium10 | `0.0053` | `20.0` | `7.42` | One-step repair, closed-loop plateau. |
 
--> Replacing the deterministic WM with flow dynamics is not working under the current CEM interface.
+-> This isolates the failure to the WM/planner interface. Residual flow fails before control because CEM needs a point rollout. Endpoint flow makes that point rollout numerically reasonable, but the planner still does not get a reliable action-sequence cost landscape.
 
 ![Success vs inference cost](assets/lewm_flow_progress_20260611/lewm_success_vs_inference_cost.png)
 
@@ -182,7 +178,7 @@ Evaluation Pipeline:
 | Later medium10 | 30 / 28 / 28 | `0.0055` | `0.0526` | `23.3` |
 | Latest medium10 | 34 / 32 / 33 | `0.0053` | `0.0513` | `20.0` |
 
--> Endpoint prediction keeps improving, but real-env success and planner cost ranking do not improve.
+-> This is the strongest "do not just train longer" signal. The model becomes better at the supervised endpoint target while closed-loop behavior gets no better, so the missing target is not more endpoint MSE; it is planner-relevant multi-step cost calibration.
 
 ![Endpoint-flow trend](assets/lewm_flow_progress_20260611/lewm_endpoint_trend.png)
 
@@ -194,7 +190,7 @@ Evaluation Pipeline:
 | Residual flow-WM | flow loss `0.0612`, pred loss `1.2075` | medium10 `0%` | flow loss alone is misleading. |
 | Endpoint flow-WM | pred loss `0.0083 -> 0.0053` | medium10 `30% -> 20%` | one-step endpoint MSE is not enough. |
 
--> The next metric should measure planner-relevant multi-step cost quality, not only one-step prediction.
+-> Prediction loss is useful only when it matches the planner interface. For native LeWM it does; for flow-WM it becomes a weak proxy. The next metric should measure whether the WM ranks CEM candidate rollouts the same way the real environment would, not only whether the next latent is close.
 
 ![Pred loss vs success](assets/lewm_flow_progress_20260611/lewm_pred_loss_vs_success.png)
 
@@ -212,7 +208,7 @@ Lower expert rank is better. Rank `1` means expert action chunks are scored best
 | Endpoint latest2 mean | `5.17` | `0.0322` | medium10 `23.3%` |
 | Endpoint latest3 mean | `6.77` | `0.0449` | medium10 `20.0%` |
 
--> Cost ranking is a useful diagnostic, but endpoint-flow still needs a better closed-loop planner objective.
+-> Cost ranking separates native/residual cleanly, but it does not fully explain endpoint-flow. Endpoint checkpoints can rank expert chunks above random chunks while still failing in real env. That means the diagnostic is too easy: expert-vs-random single-step ranking is necessary, but CEM fails on harder near-miss candidates and compounding multi-step errors.
 
 ![Endpoint cost-rank trend](assets/lewm_flow_progress_20260611/lewm_endpoint_cost_rank_trend.png)
 
@@ -225,27 +221,35 @@ Lower expert rank is better. Rank `1` means expert action chunks are scored best
 | Residual flow-WM | `16.6` | `9.98` | `0.0` | dominated |
 | Endpoint flow-WM latest | `46.3` | `7.42` | `20.0` | dominated |
 
--> Runtime should be treated as part of the result because CEM repeatedly queries the WM during control.
+-> Runtime is a research constraint, not just engineering overhead. Since CEM calls the WM many times per control step, a flow-WM must either deliver a large success gain or expose useful uncertainty to the planner. The current version does neither, so it is Pareto-dominated.
 
 ## Problems & Next Steps
 
-Problems:
+Where the project is currently stuck:
 
-- Flow-WM has a planner/objective mismatch.
-  - Flow matching can optimize while CEM receives an unusable deterministic rollout cost.
-- Endpoint flow-WM fixes one-step prediction but not closed-loop robustness.
-- Current flow-WM is slower than native CEM while much less successful.
-- Action-flow is not fairly tested yet because current runs use epoch-100 native WMs, including a collapsed seed.
+1. **The planner consumes a deterministic cost surface, but flow-WM is trained as a distributional transition model.**
+   This is why residual flow can lower flow loss while giving CEM a bad rollout.
 
-Next:
+2. **Endpoint loss solves the visible prediction bug but not the decision problem.**
+   Endpoint-flow reaches low next-latent MSE, yet success plateaus. The missing supervision is probably on action-sequence ranking and multi-step compounding error, not single-step endpoint accuracy.
 
-- Add planner-aware WM objectives:
-  - expert-vs-random cost margin loss
-  - CEM-candidate ranking loss
-  - multi-step latent rollout loss under candidate action chunks
-- Test stochastic or multi-sample flow rollout only if CEM uses the uncertainty in its cost.
-- Re-run action-flow proposal on selected native checkpoints.
-- Keep native selected full50 as the fairness anchor: `87.3 +/- 1.2%`, `1.31s/episode`.
+3. **The diagnostic is not hard enough yet.**
+   Expert-vs-random cost ranking catches residual-flow failure, but endpoint-flow can pass this test and still fail in real env. We need CEM-candidate ranking, near-miss negatives, or rollout-level calibration.
+
+4. **Flow-WM currently loses on compute.**
+   It is slower and less successful, so the only reason to keep it is if we change the planner/objective enough for flow's distributional structure to matter.
+
+Next experiments that are actually informative:
+
+| Direction | Why it follows from the evidence | Success criterion |
+| --- | --- | --- |
+| Planner-aware WM loss | Endpoint MSE improved without control gain. | Expert/CEM-good chunks receive lower predicted cost than near-miss CEM candidates. |
+| Multi-step latent rollout loss | CEM evaluates action sequences, not isolated next latents. | Cost rank and real-env success improve together over 5-step chunks. |
+| Uncertainty-aware flow planning | Flow is only useful if sampled uncertainty changes CEM's decision. | Multi-sample or risk-sensitive CEM improves success enough to justify runtime. |
+| Action-flow proposal on selected native WM | Flow may be better as an action sampler than as the dynamics model. | Faster eval than native CEM without using collapsed epoch-100 WMs. |
+| Stop unchanged endpoint-flow scaling | Latest training already shows lower pred loss with no success gain. | Only continue if a new objective/planner change is added. |
+
+Advisor-level decision point: should we make flow compatible with the original deterministic CEM planner, or change the planner to consume flow uncertainty? Current evidence favors the first as the next controlled experiment, because it preserves the original LeWM pipeline and tests the smallest hypothesis change.
 
 ## Appendix
 

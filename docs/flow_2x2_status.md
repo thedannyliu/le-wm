@@ -1191,3 +1191,38 @@ Latest queue check:
     - Interpretation: latest3 confirms the endpoint-flow plateau. More training/lower validation prediction loss did not improve real-env success or planner-cost ranking.
     - Note: these diagnostics wrote local metrics under the default diagnostic variant path (`pusht/wm_flow_endpoint_policy_original/seed_x/eval/metrics.jsonl`) because `scripts/slurm_pusht_cost_ranking_diag.sbatch` does not yet pass `experiment.variant`; W&B summaries and Slurm logs match the values above.
   - Repo root check found no `wandb/`, `outputs/`, or `multirun` directories.
+
+- PushT monitoring and follow-up, 2026-06-11 14:56 EDT:
+  - Queue health:
+    - Running LeWM H100 jobs:
+      - residual flow-WM seed 0 `9830118`, around epoch 78.
+      - residual flow-WM seed 1 `9822227`, around epoch 69 and close to the 8h walltime.
+      - endpoint-flow seed 0 `9822228`, around epoch 42 and close to the 8h walltime.
+    - Pending LeWM continuation jobs:
+      - residual flow-WM seed 2 `9835958`.
+      - endpoint-flow seed 1 `9830161`.
+      - endpoint-flow seed 2 `9830151`.
+    - Existing supervisors remain queued on dependencies and should continue the resume loop after timeout/preemption.
+  - Latest validation signal:
+    | Model | Seed | Latest epoch row | `validate/pred_loss_epoch` | `validate/flow_loss_epoch` | Read |
+    | --- | ---: | ---: | ---: | ---: | --- |
+    | residual flow-WM | 0 | 77 | `1.25744` | `0.03740` | Still no deterministic prediction recovery. |
+    | residual flow-WM | 1 | 68 | `1.24567` | `0.04600` | Same failure mode as earlier residual runs. |
+    | residual flow-WM | 2 | 75 | `1.25384` | `0.03813` | Same failure mode as earlier residual runs. |
+    | endpoint-flow | 0 | 41 | `0.00490` | `0.04739` | Lower MSE than latest3, but prior eval shows no control gain. |
+    | endpoint-flow | 1 | 39 | `0.00490` | `0.04098` | Lower MSE; not enough evidence to keep scaling unchanged. |
+    | endpoint-flow | 2 | 39 | `0.00434` | `0.05567` | Best current endpoint pred loss, but needs planner-aware validation. |
+    - Interpretation: residual flow remains unusable for CEM. Endpoint-flow continues to improve one-step MSE, but the latest3 real-env/cost-rank results already showed the same objective no longer gives better control.
+  - Pushed the next fair ablation instead of only waiting for unchanged endpoint-flow scaling:
+    - Submitted selected-native action-flow proposal training and full50 flow-policy evals using explicit selected native WM checkpoints:
+      | Seed | Native WM epoch | Action-flow job | Eval job | GPU | Variant |
+      | ---: | ---: | ---: | ---: | --- | --- |
+      | 0 | 48 | `9835994` | `9835995` | H100 | `selected_native_e48_action_flow_s0_h100` |
+      | 1 | 83 | `9835996` | `9835997` | A100 | `selected_native_e83_action_flow_s1_a100` |
+      | 2 | 75 | `9836010` | `9836011` | A100 | `selected_native_e75_action_flow_s2_a100_retry` |
+    - Record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_native_selected_action_flow_20260611/job_records/selected_native_action_flow_20260611_145524.tsv`.
+    - Output root: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_native_selected_action_flow_20260611`.
+    - The jobs use absolute `weights_epoch_{48,83,75}.pt` policy paths, so they do not accidentally load the collapsed epoch-100 native WMs.
+    - Seed 2 was first attempted on L40S, but Slurm rejected it because the action-flow script requests 8 CPUs and the L40S partition enforces a 4:1 CPU:GPU limit; it was immediately resubmitted on A100.
+  - Current decision:
+    - Do not submit another unchanged endpoint-flow eval yet. The newest validation rows strengthen the same "MSE improves without control" signal; the more informative next result is whether flow helps as an action proposal when paired with the selected native WM.

@@ -4,89 +4,140 @@ Generated: 2026-06-10 EDT
 
 Sources:
 
-- Experiment outputs under `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/`
-- Planning docs: `docs/flow_2x2_plan.md`, `docs/flow_wm_residual_cfm_plan.md`, `docs/flow_wm_followups_20260609.md`
+- Local experiment outputs under `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/`
+- Planning docs: `docs/flow_wm_residual_cfm_plan.md`, `docs/flow_wm_followups_20260609.md`
 - W&B project: `lewm-flow-2x2`
 
-Scope: this report summarizes the LeWM experiments in this codebase. Newt is only a formatting reference and is not used as a result source.
+Scope: this report summarizes the LeWM experiments in this codebase. Debug runs, quick3 evals, queue repairs, and Slurm troubleshooting notes are intentionally excluded from the main results.
 
-## Protocols
+## Method Glossary
 
-| Protocol | Episodes | Planner | Purpose |
+| Name | One-line definition |
+| --- | --- |
+| Native LeWM | Original LeWM from the paper: ViT encoder + deterministic ARPredictor trained with next-latent prediction loss and SIGReg. |
+| CEM planner | The default LeWM online controller: sample action sequences, score them with the learned world model, and execute the first action. |
+| Action-flow proposal | A learned action-sequence sampler scored by the world model; it changes the proposal policy, not the world model. |
+| Residual flow-WM | Replaces the deterministic ARPredictor with a conditional flow model over latent residual dynamics. |
+| Endpoint flow-WM | Residual flow-WM plus an endpoint prediction loss so the deterministic rollout lands near the next latent. |
+| Cost-ranking diagnostic | Offline check that compares CEM cost for expert action chunks against zero/random chunks. |
+
+## Protocols Used in Tables
+
+| Protocol | Episodes / samples | Planner | Role in report |
 | --- | ---: | --- | --- |
-| full50 | 50 | CEM unless stated | Main PushT evaluation. |
-| medium10 | 10 | CEM | Faster checkpoint comparison. |
-| quick3 | 3 | CEM | Debug only; not used for conclusions. |
-| cost ranking | 16 starts x 128 random chunks | CEM cost | Checks whether expert actions rank below zero/random actions. |
+| full50 | 50 eval episodes | CEM unless stated | Main downstream PushT metric. |
+| medium10 | 10 eval episodes | CEM | Checkpoint-screening metric. |
+| cost ranking | 16 starts x 128 random chunks | CEM cost | Non-downstream metric for planner-cost quality. |
+
+All success rates are reported as `Success rate (%)`. Mean and std are over the seed columns shown in the same row.
 
 ## Conclusion & Insights
 
-**Main result:** native LeWM + CEM remains the strongest PushT pipeline. Current flow-WM variants are useful diagnostics but not improvements yet.
+**Main result:** native LeWM + CEM is still the strongest PushT pipeline. Flow-WM variants reveal useful failure modes, but they are not improvements yet.
 
-1. **Native LeWM is strong when using selected checkpoints.**  
-   On full50, selected native checkpoints reach `87.3 +/- 1.2%` success across seeds.
+1. **Native LeWM works when checkpoints are selected by validation/eval signals.**  
+   Native LeWM + CEM reaches `87.3 +/- 1.2%` on full50 across seeds.
 
-2. **Final checkpoint is not a reliable model-selection rule.**  
-   Native epoch 100 gives `58.0 +/- 45.1%` because seed 0 collapses to `6%`, while seeds 1/2 remain above `80%`.
+2. **Final epoch is not a safe checkpoint rule.**  
+   At epoch 100, native seed 0 collapses to `6%` full50 while seeds 1/2 remain `82-86%`. The matching validation prediction loss also degrades badly for seed 0.
 
-3. **Action-flow proposal does not beat CEM.**  
-   With the native WM, action-flow full50 is `44.0 +/- 33.3%`, below native CEM.
+3. **Action-flow proposal is faster at inference but weaker in success.**  
+   On epoch-100 native WMs, action-flow is `44.0 +/- 33.3%` full50 versus native CEM `58.0 +/- 45.1%`; it is faster per episode but not reliable.
 
-4. **Residual flow-WM currently fails under CEM.**  
-   On matched medium10 evals, residual flow-WM is `0.0 +/- 0.0%`.
+4. **Residual flow-WM fails despite low flow loss.**  
+   Residual flow-WM gets `0.0 +/- 0.0%` on medium10. Its validation flow loss is low, but its endpoint/prediction loss and cost ranking are poor.
 
-5. **Endpoint-aligned flow-WM is the only positive flow-WM signal so far.**  
-   Endpoint flow improves medium10 to `30.0 +/- 17.3%` under quick-selected checkpoints, and has one full50 result at `30%`. It is still far below native LeWM.
+5. **Endpoint flow-WM is the first positive flow-WM direction, but still below native LeWM.**  
+   Endpoint flow-WM improves medium10 to `30.0 +/- 17.3%`; seed 0 full50 is `30%` versus native seed 0 full50 `88%`.
 
 ## Key Results
 
-### Main Full50 Results
+### Full50: Native WM, CEM vs Action-Flow
 
-All rows below use PushT full50. Scores are success rates in percent.
+Same task and eval protocol: PushT full50. The rows below all use the original native LeWM world model.
 
-| Model | Checkpoint rule | Planner / policy | Seed 0 | Seed 1 | Seed 2 | Mean +/- std |
-| --- | --- | --- | ---: | ---: | ---: | ---: |
-| Native LeWM | selected eval checkpoints | CEM | 88 | 86 | 88 | 87.3 +/- 1.2 |
-| Native LeWM | epoch 100 | CEM | 6 | 82 | 86 | 58.0 +/- 45.1 |
-| Native LeWM | epoch 100 | action-flow proposal | 6 | 68 | 58 | 44.0 +/- 33.3 |
-| Endpoint flow-WM | selected seed 0 checkpoint | CEM | 30 | n/a | n/a | 30.0 |
+| World model | Controller | Epoch s0 | Epoch s1 | Epoch s2 | Success s0 (%) | Success s1 (%) | Success s2 (%) | Mean +/- std (%) |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Native LeWM | CEM | 48 | 83 | 75 | 88 | 86 | 88 | 87.3 +/- 1.2 |
+| Native LeWM | CEM | 100 | 100 | 100 | 6 | 82 | 86 | 58.0 +/- 45.1 |
+| Native LeWM | Action-flow proposal | 100 | 100 | 100 | 6 | 68 | 58 | 44.0 +/- 33.3 |
 
-Interpretation: the best current result is still native LeWM + CEM with checkpoint selection. The seed 0 epoch-100 collapse is why final-checkpoint reporting is misleading.
+Read: the first row is the fair native baseline for capability. The second row is a checkpoint-selection ablation. The third row tests whether the learned action-flow proposal can replace CEM on the same epoch-100 native WMs.
 
-### Medium10 Flow-WM Comparison
+### Full50: Seed-0 Endpoint Flow Check
 
-All rows below use PushT medium10 with CEM. Scores are success rates in percent.
+Only seed 0 full50 is available for endpoint flow-WM, so this is a single-seed comparison rather than a 3-seed aggregate.
 
-| Model | Checkpoint rule | Seed 0 | Seed 1 | Seed 2 | Mean +/- std |
+| World model | Controller | Seed | Epoch | Success rate (%) | Eval time / episode (s) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| Residual flow-WM | matched evaluated checkpoints | 0 | 0 | 0 | 0.0 +/- 0.0 |
-| Endpoint flow-WM | latest cost-ranking checkpoints | 30 | 20 | 10 | 20.0 +/- 10.0 |
-| Endpoint flow-WM | quick-selected checkpoints | 50 | 20 | 20 | 30.0 +/- 17.3 |
+| Native LeWM | CEM | 0 | 48 | 88 | 1.35 |
+| Endpoint flow-WM | CEM | 0 | 14 | 30 | 5.56 |
 
-Interpretation: endpoint alignment helps, but the best endpoint-flow mean is still far below native full50 performance.
+Read: endpoint alignment improves over residual flow-WM, but seed 0 is still far below native LeWM and is slower at inference.
+
+### Medium10: World-Model Variants Under CEM
+
+Same task, controller, and eval protocol: PushT medium10 with CEM. This table is for checkpoint screening, not final reporting.
+
+| World model | Epoch s0 | Epoch s1 | Epoch s2 | Success s0 (%) | Success s1 (%) | Success s2 (%) | Mean +/- std (%) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Native LeWM | 35 | 28 | 33 | 100 | 90 | 80 | 90.0 +/- 10.0 |
+| Residual flow-WM | 16 | 13 | 17 | 0 | 0 | 0 | 0.0 +/- 0.0 |
+| Endpoint flow-WM | 14 | 12 | 12 | 50 | 20 | 20 | 30.0 +/- 17.3 |
+
+Read: endpoint flow-WM is directionally better than residual flow-WM, but the gap to native LeWM is still large under the same medium10+CEM protocol.
 
 ## Training Metrics
 
-Metrics are taken from validation records nearest the evaluated checkpoint epoch. Lower is better for loss columns.
+Metrics are validation metrics at the evaluated checkpoints. Lower is better for loss columns.
 
-| Model / checkpoint group | Seeds | Eval protocol | Eval success | Val loss | Val pred loss | Val flow loss | Val endpoint loss | Val SIGReg loss |
+| World model / checkpoint set | Seeds | Eval protocol | Success rate (%) | Val total loss | Val pred loss | Val flow loss | Val endpoint loss | Val SIGReg loss |
 | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Native selected | 3 | full50 | 87.3 +/- 1.2 | 0.1209 +/- 0.0018 | 0.0019 +/- 0.0004 | n/a | n/a | 1.322 +/- 0.024 |
-| Native epoch 100 | 3 | full50 | 58.0 +/- 45.1 | 0.2575 +/- 0.2363 | 0.1053 +/- 0.1797 | n/a | n/a | 1.691 +/- 0.628 |
+| Native LeWM selected | 3 | full50 | 87.3 +/- 1.2 | 0.1209 +/- 0.0018 | 0.0019 +/- 0.0004 | n/a | n/a | 1.322 +/- 0.024 |
+| Native LeWM epoch 100 | 3 | full50 | 58.0 +/- 45.1 | 0.2575 +/- 0.2363 | 0.1053 +/- 0.1797 | n/a | n/a | 1.691 +/- 0.628 |
 | Residual flow-WM | 3 | medium10 | 0.0 +/- 0.0 | 0.2646 +/- 0.0079 | 1.2075 +/- 0.0099 | 0.0612 +/- 0.0057 | n/a | 2.260 +/- 0.035 |
-| Endpoint flow-WM | 3 | medium10 | 20.0 +/- 10.0 | 0.2507 +/- 0.0137 | 0.0069 +/- 0.0002 | 0.0578 +/- 0.0077 | 0.0069 +/- 0.0002 | 2.135 +/- 0.066 |
+| Endpoint flow-WM | 3 | medium10 | 30.0 +/- 17.3 | 0.2507 +/- 0.0137 | 0.0069 +/- 0.0002 | 0.0578 +/- 0.0077 | 0.0069 +/- 0.0002 | 2.135 +/- 0.066 |
 
-Training insight:
+Training-metric read:
 
-- Native seed 0 epoch 100 has much worse validation loss than its selected checkpoint, matching the eval collapse.
-- Residual flow-WM has low flow loss but very high pred loss and poor eval, so flow loss alone is not a sufficient selection metric.
-- Endpoint loss fixes the direct endpoint/pred metric, but eval is still limited, so planner-cost alignment remains the bottleneck.
+- Native seed 0 epoch 100 has poor validation prediction loss, matching its downstream collapse.
+- Residual flow-WM lowers flow loss but keeps very high prediction/endpoint error, so flow loss alone does not predict CEM success.
+- Endpoint flow-WM fixes endpoint prediction loss, but downstream success remains limited; this points to planner-cost alignment, not just one-step endpoint accuracy.
 
-## Cost-Ranking Diagnostic
+```mermaid
+xychart-beta
+    title "Validation Prediction Loss at Evaluated Checkpoints"
+    x-axis ["Native selected", "Native epoch100", "Residual flow-WM", "Endpoint flow-WM"]
+    y-axis "Val pred loss" 0 --> 1.3
+    bar [0.0019, 0.1053, 1.2075, 0.0069]
+```
 
-Protocol: 16 dataset starts, 128 random action chunks per start. Lower expert rank is better.
+## Compute Metrics
 
-| Model | Seed | Epoch | Mean expert rank | Random better frac | Mean expert cost | Mean random cost |
+Training wall time is estimated from local JSONL `wall_time`; eval time is from `evaluation_time` in eval metrics. These are practical run-time measurements, not profiler-grade kernel timings.
+
+| Model / controller | Training progress used | Train wall time (h) | Eval protocol | Eval time / episode (s) |
+| --- | --- | ---: | --- | ---: |
+| Native LeWM + CEM | 100 epochs | 86.7 +/- 5.6 | selected full50 | 1.31 +/- 0.06 |
+| Native LeWM + action-flow | native WM + action-flow policy | n/a | full50 | 0.44 +/- 0.08 |
+| Residual flow-WM + CEM | 54-61 epochs | 63.8 +/- 1.3 | medium10 | 9.98 +/- 0.07 |
+| Endpoint flow-WM + CEM | 28-30 epochs | 39.9 +/- 0.8 | medium10 | 5.47 +/- 0.54 |
+
+Compute read: action-flow is faster at inference but has weaker success. Flow-WM variants are much slower under CEM because each latent rollout requires flow integration; endpoint flow is faster than residual flow in the measured evals but still slower than native LeWM.
+
+```mermaid
+xychart-beta
+    title "Inference Time per Episode"
+    x-axis ["Native CEM", "Native action-flow", "Residual flow-WM CEM", "Endpoint flow-WM CEM"]
+    y-axis "seconds / episode" 0 --> 11
+    bar [1.31, 0.44, 9.98, 5.47]
+```
+
+## Planner-Cost Metrics
+
+Cost ranking is not a downstream success metric. It asks whether the world model gives CEM a useful cost surface: expert action chunks should have lower cost than zero/random chunks.
+
+| World model | Seed | Epoch | Mean expert rank | Random better frac | Mean expert cost | Mean random cost |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | Native LeWM | 2 | 75 | 1.00 | 0.000 | 2.44 | 179.33 |
 | Endpoint flow-WM | 1 | 17 | 1.06 | 0.0005 | 4.13 | 29.78 |
@@ -95,50 +146,39 @@ Protocol: 16 dataset starts, 128 random action chunks per start. Lower expert ra
 | Residual flow-WM | 2 | 17 | 56.75 | 0.430 | 176.00 | 176.22 |
 | Residual flow-WM | 2 | 24 | 65.56 | 0.501 | 174.68 | 174.60 |
 
-Diagnostic insight: native LeWM gives CEM a clean ranking surface. Residual flow-WM often cannot distinguish expert from random chunks. Endpoint flow-WM partially repairs this, especially seed 1, but the improvement is not yet consistently reflected in high eval success.
+Planner-cost read: residual flow-WM often cannot rank expert action chunks better than random chunks. Endpoint flow-WM partially repairs the ranking, especially seed 1, but that does not yet translate into native-level downstream success.
 
 ## Pipeline (w/ Diff)
 
 ```mermaid
 flowchart LR
-    A[PushT expert dataset] --> B[LeWM training]
-    B --> C[Checkpoint selection]
-    C --> D[full50 / medium10 CEM eval]
-    C --> E[Action-flow proposal eval]
-    C --> F[Cost-ranking diagnostic]
+    A[PushT expert dataset] --> B[Train world model]
+    B --> C[Choose checkpoint]
+    C --> D[Downstream eval<br/>full50 or medium10]
+    C --> E[Planner-cost diagnostic]
 
-    B -. Original .-> B1[ARPredictor<br/>pred loss + SIGReg]
-    B -. Changed .-> B2[Residual CFM flow-WM<br/>flow loss + SIGReg]
-    B -. Changed .-> B3[Endpoint flow-WM<br/>flow + endpoint + SIGReg]
-    E -. Added .-> E1[ConditionalActionFlow proposal]
-    F -. Added .-> F1[Expert vs zero/random cost check]
+    B -. Native .-> B1[ARPredictor<br/>pred loss + SIGReg]
+    B -. Flow-WM .-> B2[Residual CFM<br/>flow loss + SIGReg]
+    B -. Endpoint flow-WM .-> B3[Residual CFM<br/>flow + endpoint loss + SIGReg]
+    D -. Controller .-> D1[CEM or action-flow proposal]
 ```
 
-| Pipeline part | Original LeWM | Current experiments |
-| --- | --- | --- |
-| Data | PushT expert dataset | PushT formal scope; Cube deferred |
-| World model | `ARPredictor` | residual flow-WM and endpoint flow-WM |
-| Objective | prediction loss + SIGReg | flow loss; endpoint variant adds endpoint loss |
-| Planner | CEM/MPC | kept fixed for WM comparison |
-| Proposal policy | CEM sampling | optional action-flow proposal |
-| Model selection | checkpoint eval needed | cost ranking + medium eval + full50 confirmation |
+## Recommended Next Steps
 
-## Problems & Next Steps
+1. **Finish endpoint flow-WM full50 for seeds 1 and 2.**  
+   Do not compare endpoint seed 0 against native 3-seed mean as a final claim.
 
-1. **Use selected checkpoints in all main comparisons.**  
-   Report final epoch separately as a checkpoint-selection ablation, not as the native baseline.
+2. **Select checkpoints using multiple signals.**  
+   Use validation pred/endpoint loss, medium10 success, and cost ranking before running full50.
 
-2. **Regenerate a clean result table after endpoint full50 completes for all seeds.**  
-   Current endpoint full50 has only seed 0, so endpoint-vs-native full50 is incomplete.
+3. **Stop treating residual flow loss as sufficient.**  
+   Residual flow-WM has low flow loss but fails both downstream eval and cost ranking.
 
-3. **Use cost ranking as a filter, not the final metric.**  
-   Endpoint seed 1 has excellent cost ranking but only moderate eval so far; full50 confirmation is still required.
+4. **Focus flow-WM changes on planner alignment.**  
+   Next ablations should test endpoint-loss weight, deterministic vs stochastic flow rollout, and multi-sample CEM rollout.
 
-4. **Do not continue residual flow-WM without a planner-alignment change.**  
-   The diagnostic shows its CEM cost surface is not usable.
-
-5. **Next flow-WM ablation should vary endpoint/planner alignment.**  
-   Candidate axes: endpoint-loss weight, deterministic vs stochastic rollout, multi-sample CEM rollout, and cost-ranking-selected checkpoints.
+5. **Export final W&B plots for the presentation.**  
+   Recommended panels: validation pred loss, validation flow loss, validation endpoint loss, full50/medium10 success rate, evaluation time per episode, and cost-ranking metrics.
 
 ## Appendix
 
@@ -151,6 +191,6 @@ Important output roots:
 
 Caveats:
 
-- full50 is the main eval protocol; medium10 is for checkpoint screening.
-- Mean/std is over seeds or available seed-level rows, not independent repeated training with identical seed sets unless stated.
-- Endpoint full50 currently has only one completed seed-level row in this report.
+- Mean/std is over the displayed seeds.
+- Endpoint flow-WM full50 currently has only seed 0 in this report.
+- Training wall time is affected by resume/preemption history; use it as practical compute cost, not exact hardware efficiency.

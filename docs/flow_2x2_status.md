@@ -1175,5 +1175,11 @@ Latest queue check:
     - `9820450`, seed 1 epoch 32, variant `cost_rank_flow_endpoint_s1_e32_latest3`.
     - `9820451`, seed 2 epoch 33, variant `cost_rank_flow_endpoint_s2_e33_latest3`.
     - Record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_cost_diagnostics_20260609/job_records/latest3_endpoint_cost_rank_20260611_033034.tsv`.
-  - Latest3 jobs are pending on priority at this snapshot.
+  - Latest3 medium10 full-CEM evals completed shortly after submission:
+    - `9820446`, seed 0 epoch 34: `3/10`, success rate `30.0%`.
+    - `9820447`, seed 1 epoch 32: `1/10`, success rate `10.0%`.
+    - `9820448`, seed 2 epoch 33: `2/10`, success rate `20.0%`.
+    - Mean success rate: `20.0 +/- 10.0%`.
+    - Interpretation: the plateau is confirmed; more endpoint-flow training and lower validation prediction loss still do not improve real-env success.
+  - Latest3 cost-ranking jobs remain pending on priority at this snapshot: `9820449`, `9820450`, `9820451`.
   - Repo root check found no `wandb/`, `outputs/`, or `multirun` directories.

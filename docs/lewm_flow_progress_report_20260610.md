@@ -120,13 +120,15 @@ Training-metric read:
 | Residual flow-WM | `Val flow loss` improves from about `2.8` to `0.04-0.05`, while `Val pred loss` worsens from about `0.08` to `1.24` | medium10 remains `0%` | Flow loss alone is optimizing a dynamics objective that is misaligned with deterministic CEM rollout. |
 | Endpoint flow-WM | `Val endpoint/pred loss` improves from about `0.08-0.095` to about `0.0056`; `Val flow loss` also improves to `0.045-0.062` | medium10 improves to `30.0 +/- 17.3%`, but seed 0 full50 is only `30%` | Endpoint alignment is necessary but not sufficient; next objective should target planner-cost alignment. |
 
-```mermaid
-xychart-beta
-    title "Validation Prediction Loss at Evaluated Checkpoints"
-    x-axis ["Native selected", "Native epoch100", "Residual flow-WM", "Endpoint flow-WM"]
-    y-axis "Val pred loss" 0 --> 1.3
-    bar [0.0019, 0.1053, 1.2075, 0.0069]
-```
+Epoch-wise figures generated from local `metrics.jsonl`:
+
+![Native LeWM validation prediction loss by epoch](assets/lewm_flow_progress_20260611/native_val_pred_loss_by_epoch.png)
+
+![Residual flow-WM validation losses by epoch](assets/lewm_flow_progress_20260611/residual_flow_wm_val_losses_by_epoch.png)
+
+![Endpoint flow-WM validation losses by epoch](assets/lewm_flow_progress_20260611/endpoint_flow_wm_val_losses_by_epoch.png)
+
+![PushT eval success versus checkpoint epoch](assets/lewm_flow_progress_20260611/eval_success_vs_epoch.png)
 
 ## Compute Metrics
 

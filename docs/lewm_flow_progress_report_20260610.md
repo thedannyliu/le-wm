@@ -61,6 +61,7 @@ Protocol: PushT, 10 real-environment episodes, full CEM. This is a checkpoint-sc
 | Residual flow-WM | e16 / e13 / e17 | 0 / 0 / 0 | `0.0 +/- 0.0` | Flow matching alone fails under deterministic CEM rollout. |
 | Endpoint flow-WM, first selected screen | e14 / e12 / e12 | 50 / 20 / 20 | `30.0 +/- 17.3` | Endpoint loss is directionally useful. |
 | Endpoint flow-WM, later lower-pred-loss screen | e19 / e17 / e17 | 30 / 20 / 10 | `20.0 +/- 10.0` | Lower validation pred loss does not guarantee better closed-loop success. |
+| Endpoint flow-WM, latest2 lower-pred-loss screen | e30 / e28 / e28 | 20 / 20 / 30 | `23.3 +/- 5.8` | Still in the same weak regime despite better validation loss. |
 
 ### Planner-Cost Diagnostic
 
@@ -72,8 +73,11 @@ Protocol: 16 starts, 128 random action chunks per start. Lower expert rank and l
 | Residual flow-WM | 2 | 17 | `56.75` | `0.4302` | Medium10/full-CEM evals fail. |
 | Residual flow-WM | 2 | 24 | `65.56` | `0.5015` | Near-random cost surface. |
 | Endpoint flow-WM | 0 | 19 | `4.31` | `0.0254` | Medium10 `30%`. |
+| Endpoint flow-WM | 0 | 30 | `7.06` | `0.0469` | Medium10 `20%`; worse ranking than e19. |
 | Endpoint flow-WM | 1 | 17 | `1.06` | `0.0005` | Medium10 only `20%`. |
+| Endpoint flow-WM | 1 | 28 | `1.19` | `0.0015` | Near-native ranking, still only `20%` medium10. |
 | Endpoint flow-WM | 2 | 17 | `11.94` | `0.0845` | Medium10 `10%`. |
+| Endpoint flow-WM | 2 | 28 | `7.25` | `0.0483` | Ranking improves, medium10 only `30%`. |
 
 Read: cost ranking is a better diagnostic than flow loss for whether CEM sees a sensible cost surface. But even strong cost ranking is not sufficient for closed-loop success, as endpoint seed 1 shows.
 
@@ -146,9 +150,10 @@ Endpoint flow-WM improves the right training metric but still does not solve the
 | --- | --- | ---: | ---: |
 | First selected screen | e14 / e12 / e12 | `0.00829` | `30.0%` |
 | Later lower-pred-loss screen | e19 / e17 / e17 | `0.00690` | `20.0%` |
-| Latest training rows | e31 / e29 / e29 | about `0.0055` | latest2 eval pending |
+| Latest2 lower-pred-loss screen | e30 / e28 / e28 | about `0.0055` | `23.3%` |
+| Latest3 submitted screen | e34 / e32 / e33 | about `0.0053-0.0057` | pending |
 
-Insight: better one-step endpoint loss is necessary but not sufficient. The useful next question is whether the lower-loss later checkpoints improve cost ranking and full CEM success; those latest2 jobs are queued.
+Insight: better one-step endpoint loss is necessary but not sufficient. Latest2 confirms that lower-loss later checkpoints remain in the same weak real-env regime; latest3 is only useful as a trend check, not because the current evidence suggests a near-term jump to native-level performance.
 
 ### 4. Planner-Cost Alignment Ablation
 
@@ -199,8 +204,8 @@ The following figures summarize the training/eval signals discussed above.
 
 ### Recommended Next Steps
 
-1. **Finish the queued latest2 endpoint checks before changing the architecture again.**
-   Pending jobs: medium10 full-CEM on e30/e28/e28 and matching cost-rank diagnostics. These answer whether the latest lower pred loss has any downstream value.
+1. **Finish the queued latest3 endpoint checks, then stop spending large eval budget on unchanged endpoint-flow if the trend remains flat.**
+   Latest2 e30/e28/e28 stayed at `20-30%` medium10. Latest3 e34/e32/e33 is a trend check, not a new hypothesis.
 
 2. **Use a multi-signal checkpoint rule for flow-WM.**
    Select checkpoints by validation endpoint/pred loss, medium10 success, and cost-rank together. Do not select by flow loss alone.
@@ -223,8 +228,8 @@ The following figures summarize the training/eval signals discussed above.
 | --- | --- | --- |
 | Endpoint flow-WM training | running/continuing under supervisors | May produce stronger late checkpoints, but current lower pred loss has not yet translated into success. |
 | Residual flow-WM training | running/continuing under supervisors | Useful mainly to confirm the flow-loss mismatch; current evidence is already strongly negative. |
-| Endpoint latest2 medium10 eval | queued | Tests e30/e28/e28 real-env behavior. |
-| Endpoint latest2 cost-rank diagnostic | queued | Tests whether lower endpoint loss improves planner-cost ranking. |
+| Endpoint latest3 medium10 eval | queued | Tests e34/e32/e33 real-env behavior after another training interval. |
+| Endpoint latest3 cost-rank diagnostic | queued | Tests whether continued lower endpoint loss improves planner-cost ranking. |
 
 ## Appendix: Output Roots
 

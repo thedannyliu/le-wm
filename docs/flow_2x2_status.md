@@ -1130,3 +1130,50 @@ Latest queue check:
     - `scripts/slurm_runtime_env.sh` now sets `TORCHINDUCTOR_CACHE_DIR` and `TRITON_CACHE_DIR` under `${STABLEWM_HOME}/runtime`.
     - This keeps future PyTorch compile caches out of HOME and avoids relying on `/tmp/torchinductor_*`.
   - Repo root check found no `wandb/`, `outputs/`, or `multirun` directories.
+
+- PushT monitoring and follow-up, 2026-06-11 03:30 EDT:
+  - Latest2 endpoint evals completed successfully:
+    - H200 primary medium10 full-CEM:
+      - `9809339`, seed 0 epoch 30: `2/10`, success rate `20.0%`.
+      - `9809340`, seed 1 epoch 28: `2/10`, success rate `20.0%`.
+      - `9809342`, seed 2 epoch 28: `3/10`, success rate `30.0%`.
+    - A100 backup medium10 full-CEM:
+      - `9813246`, seed 0 epoch 30: `2/10`, success rate `20.0%`.
+      - `9813247`, seed 1 epoch 28: `1/10`, success rate `10.0%`.
+      - `9813248`, seed 2 epoch 28: `3/10`, success rate `30.0%`.
+    - Interpretation: the backup confirms the same low-success regime; the H200/A100 seed 1 difference is within the noise expected from 10 episodes.
+  - Latest2 endpoint cost-ranking diagnostics completed:
+    | Seed | Epoch | Mean expert rank | Random-better fraction | Read |
+    | --- | ---: | ---: | ---: | --- |
+    | 0 | 30 | `7.0625` | `0.0469` | Worse than seed 0 epoch 19 (`4.3125`, `0.0254`). |
+    | 1 | 28 | `1.1875` | `0.0015` | Still near-native ranking, but real-env medium10 remains low. |
+    | 2 | 28 | `7.2500` | `0.0483` | Better than seed 2 epoch 17, but still far from native and only `3/10` medium10. |
+  - Main insight strengthened:
+    - Endpoint-flow validation prediction loss keeps improving, but real-env success and planner-cost ranking do not improve monotonically.
+    - The best current endpoint-flow full50 remains seed 0 epoch 14 at `30%`, far below native selected full50 `87.3 +/- 1.2%`.
+    - Original residual flow-WM remains misaligned: latest deterministic `validate/pred_loss` is still around `1.24-1.25` at epochs 60-67.
+  - Current training metrics:
+    | Model | Seed | Latest epoch row | Step | `validate/pred_loss` | `validate/flow_loss` | Best pred row |
+    | --- | ---: | ---: | ---: | ---: | ---: | --- |
+    | endpoint-flow | 0 | 34 | 487650 | `0.005704` | `0.049251` | 32 (`0.005303`) |
+    | endpoint-flow | 1 | 32 | 456050 | `0.005283` | `0.043976` | 31 (`0.005283`) |
+    | endpoint-flow | 2 | 33 | 466200 | `0.005303` | `0.060745` | 30 (`0.005180`) |
+    | residual flow-WM | 0 | 67 | 943500 | `1.253253` | `0.038692` | 0 (`0.080594`) |
+    | residual flow-WM | 1 | 60 | 848450 | `1.242639` | `0.047671` | 0 (`0.085119`) |
+    | residual flow-WM | 2 | 66 | 920200 | `1.242183` | `0.039303` | 0 (`0.080062`) |
+  - Training queue health:
+    - Running endpoint-flow: seed 0 `9805476`, seed 1 `9805656`, seed 2 continuation `9817278`.
+    - Running residual flow-WM: seed 0 `9809053`, seed 1 `9803788`, seed 2 continuation `9817276`.
+    - Preemptions for endpoint seed 2 `9805624` and residual flow seed 2 `9803790` were handled by supervisors and replaced by the continuations above.
+  - Submitted latest3 endpoint medium10 full-CEM evals for the newest available checkpoints:
+    - `9820446`, seed 0 epoch 34, variant `flow_endpoint_medium10_fullcem_latest3_e34_s0`.
+    - `9820447`, seed 1 epoch 32, variant `flow_endpoint_medium10_fullcem_latest3_e32_s1`.
+    - `9820448`, seed 2 epoch 33, variant `flow_endpoint_medium10_fullcem_latest3_e33_s2`.
+    - Record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_flow_endpoint_formal_20260609/job_records/medium_eval_endpoint_latest3_20260611_033034.tsv`.
+  - Submitted latest3 endpoint cost-ranking diagnostics:
+    - `9820449`, seed 0 epoch 34, variant `cost_rank_flow_endpoint_s0_e34_latest3`.
+    - `9820450`, seed 1 epoch 32, variant `cost_rank_flow_endpoint_s1_e32_latest3`.
+    - `9820451`, seed 2 epoch 33, variant `cost_rank_flow_endpoint_s2_e33_latest3`.
+    - Record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_cost_diagnostics_20260609/job_records/latest3_endpoint_cost_rank_20260611_033034.tsv`.
+  - Latest3 jobs are pending on priority at this snapshot.
+  - Repo root check found no `wandb/`, `outputs/`, or `multirun` directories.

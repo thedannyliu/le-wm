@@ -1181,5 +1181,13 @@ Latest queue check:
     - `9820448`, seed 2 epoch 33: `2/10`, success rate `20.0%`.
     - Mean success rate: `20.0 +/- 10.0%`.
     - Interpretation: the plateau is confirmed; more endpoint-flow training and lower validation prediction loss still do not improve real-env success.
-  - Latest3 cost-ranking jobs remain pending on priority at this snapshot: `9820449`, `9820450`, `9820451`.
+  - Latest3 cost-ranking jobs completed:
+    | Seed | Epoch | Mean expert rank | Random-better fraction | Read |
+    | --- | ---: | ---: | ---: | --- |
+    | 0 | 34 | `7.5625` | `0.0513` | Still worse than seed 0 epoch 19 and not better than latest2. |
+    | 1 | 32 | `5.4375` | `0.0342` | Regressed from latest2 seed 1 rank `1.1875`. |
+    | 2 | 33 | `7.3125` | `0.0493` | Similar to latest2 seed 2 rank `7.2500`. |
+    - Mean expert rank is `6.7708`; random-better fraction is `0.0449`.
+    - Interpretation: latest3 confirms the endpoint-flow plateau. More training/lower validation prediction loss did not improve real-env success or planner-cost ranking.
+    - Note: these diagnostics wrote local metrics under the default diagnostic variant path (`pusht/wm_flow_endpoint_policy_original/seed_x/eval/metrics.jsonl`) because `scripts/slurm_pusht_cost_ranking_diag.sbatch` does not yet pass `experiment.variant`; W&B summaries and Slurm logs match the values above.
   - Repo root check found no `wandb/`, `outputs/`, or `multirun` directories.

@@ -1,0 +1,7 @@
+setting,eval,pred_loss,flow_loss,success,sec_per_episode,train_h
+Native selected CEM,full50,0.001902,,87.3,1.31,61.3
+Native early CEM,medium10,0.00284,,90.0,1.67,31.1
+Residual flow-WM,medium10,1.207489,0.061186,0.0,9.98,16.6
+Endpoint first,medium10,0.008286,0.061429,30.0,5.47,16.7
+Endpoint latest2,medium10,0.005549,0.05264,23.3,5.67,40.7
+Endpoint latest3,medium10,0.005339,0.051296,20.0,7.42,46.3

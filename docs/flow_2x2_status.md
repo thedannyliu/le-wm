@@ -1102,3 +1102,31 @@ Latest queue check:
     - `9809346`, seed 2 epoch 28, variant `cost_rank_flow_endpoint_s2_e28_latest2`.
     - Record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_cost_diagnostics_20260609/job_records/latest2_endpoint_cost_rank_20260610_213917.tsv`.
   - Repo root check found no `wandb/`, `outputs/`, or `multirun` directories.
+
+- PushT monitoring and follow-up, 2026-06-10 22:44 EDT:
+  - Current training jobs are healthy and still running on H100:
+    - Endpoint-flow: seed 0 `9805476`, seed 1 `9805656`, seed 2 `9805624`.
+    - Original residual flow-WM: seed 0 `9809053`, seed 1 `9803788`, seed 2 `9803790`.
+    - Supervisors remain pending on dependencies and are ready to continue after timeout/preemption.
+  - Latest endpoint-flow checkpoints now available:
+    | Seed | Latest checkpoint | Latest metric epoch row | `validate/pred_loss` | `validate/flow_loss` | Best pred row |
+    | --- | --- | --- | --- | --- | --- |
+    | 0 | epoch 31 | 31 | `0.005498` | `0.049934` | 28 (`0.005365`) |
+    | 1 | epoch 29 | 29 | `0.005608` | `0.045050` | 28 (`0.005608`) |
+    | 2 | epoch 29 | 29 | `0.005541` | `0.062937` | 28 (`0.005541`) |
+  - Original residual flow-WM remains unsuitable for more real-env eval at this point:
+    - seed 0 epoch 63: deterministic `validate/pred_loss=1.261526`.
+    - seed 1 epoch 56: deterministic `validate/pred_loss=1.232183`.
+    - seed 2 epoch 61: deterministic `validate/pred_loss=1.254028`.
+  - Latest2 endpoint real-env and cost-rank jobs are still queued, with no new failure logs:
+    - H200 medium10 full-CEM evals pending: `9809339`, `9809340`, `9809342`.
+    - A100 medium10 backup evals pending: `9813246`, `9813247`, `9813248`.
+    - A100 cost-rank diagnostics pending: `9809343`, `9809344`, `9809346`.
+  - Submitted A100 backup eval record:
+    - `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_flow_endpoint_formal_20260609/job_records/medium_eval_endpoint_latest2_a100_backup_20260610_224054.tsv`.
+    - These jobs use distinct variants and W&B names from the H200 jobs, so they cannot race on the same eval output directory.
+  - Did not submit another L40S duplicate batch: the L40S queue is also priority-bound, and H200 plus A100 coverage is already queued for the same latest2 checkpoints.
+  - Runtime hygiene fix:
+    - `scripts/slurm_runtime_env.sh` now sets `TORCHINDUCTOR_CACHE_DIR` and `TRITON_CACHE_DIR` under `${STABLEWM_HOME}/runtime`.
+    - This keeps future PyTorch compile caches out of HOME and avoids relying on `/tmp/torchinductor_*`.
+  - Repo root check found no `wandb/`, `outputs/`, or `multirun` directories.

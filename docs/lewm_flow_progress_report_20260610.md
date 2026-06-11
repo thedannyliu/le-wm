@@ -54,16 +54,129 @@ These are the signals that most clearly decide what to try next.
 | Cost ranking is necessary but insufficient | Endpoint seed 1 rank `1.19`, random-better frac `0.0015`, but medium10 only `20%`. | Offline expert-vs-random cost ranking is helpful, but not enough for closed-loop robustness. |
 | Flow-WM has poor compute tradeoff | Native CEM `1.31s/ep` at `87.3%`; endpoint latest `7.42s/ep` at `20.0%`; residual `9.98s/ep` at `0%`. | Flow-WM needs a stronger reason to pay its inference cost. |
 
-## Pipeline Difference
+## LeWM Pipeline
 
-Only the predictor/objective was intended to change in the world-model comparison.
+Algorithm: LeWM PushT Training and Evaluation Pipeline (`->` marks our modification)
 
-| Variant | World model | Objective | Planner/eval | Status |
-| --- | --- | --- | --- | --- |
-| Native LeWM | deterministic ARPredictor | next-latent pred loss + SIGReg | original CEM | strong baseline |
-| Residual flow-WM | conditional residual flow | flow matching + SIGReg | original CEM | fails |
-| Endpoint flow-WM | residual flow + endpoint prediction | flow + endpoint/pred loss + SIGReg | original CEM | partial repair, plateau |
-| Action-flow proposal | native WM unchanged | action-sequence flow imitation | learned proposal/eval | needs fair selected-checkpoint eval |
+Input:
+    PushT expert dataset: `pusht_expert_train.lance`.
+        -> Current report focuses on PushT only; OGBench/Cube is not used for the claims here.
+
+    Each trajectory provides:
+        - RGB pixels
+        - action
+        - proprio
+        - state
+
+    Training sample construction:
+        - history size: 3 frames
+        - prediction target: 1 next latent
+        - frameskip / action block: 5
+        - train split: 90%
+
+Model:
+    LeWM is a latent world model trained from expert demonstrations.
+
+    Shared modules kept fixed across WM variants:
+        - ViT-tiny image encoder: pixels -> latent features
+        - projector MLP: encoder features -> latent z
+        - action Embedder: action chunk -> action embedding
+        - prediction projector MLP
+        - SIGReg regularization
+
+    Native world model:
+        - ARPredictor: latent history z, action embedding -> next latent z
+        - objective: next-latent prediction loss + SIGReg
+
+    Flow world-model variants:
+        - Residual flow-WM:
+            ARPredictor -> ConditionalFlowPredictor over latent residual dynamics
+            objective -> flow-matching loss + SIGReg
+        - Endpoint flow-WM:
+            ConditionalFlowPredictor + endpoint prediction target
+            objective -> flow loss + endpoint/pred loss + SIGReg
+
+    Policy / planner:
+        - default action selector: CEM planner using the learned world model
+        - CEM config: 300 samples, 30 optimization steps, top-30 elites
+        - planning horizon: 5, receding horizon: 5
+        - optional action-flow proposal:
+            CEM proposal sampler -> learned conditional action-flow proposal
+            native WM is unchanged in this ablation
+
+Training Pipeline:
+    Step 1: Load expert demonstrations
+        Load PushT expert trajectories from `pusht_expert_train.lance`.
+        Normalize/cache action, proprio, and state statistics.
+        Use pixels and action chunks to train the latent world model.
+
+    Step 2: Train native LeWM baseline
+        Update:
+            - ViT encoder
+            - projector / prediction projector
+            - action Embedder
+            - ARPredictor
+
+        Optimize:
+            next-latent prediction loss + SIGReg
+
+        Output:
+            native LeWM checkpoints for CEM eval.
+
+    Step 3: Train flow-WM ablations
+        Keep the same data, encoder, projector, action Embedder, optimizer,
+        dataloader, checkpointing, W&B logging, and eval pipeline.
+
+        Change only:
+            native ARPredictor -> flow-based predictor
+
+        Residual flow-WM:
+            optimize flow-matching loss.
+
+        Endpoint flow-WM:
+            optimize flow-matching loss plus endpoint/prediction loss.
+
+    Step 4: Checkpoint selection
+        Record validation metrics during training:
+            - pred loss
+            - flow loss, for flow-WM
+            - endpoint loss, for endpoint flow-WM
+            - SIGReg loss
+
+        Select checkpoints using validation/eval signals.
+        Important: final epoch is not a safe rule; native seed 0 collapses at epoch 100.
+
+Evaluation Pipeline:
+    Main eval: closed-loop PushT real-environment evaluation.
+
+    For each checkpoint:
+        1. Reset PushT eval environment.
+        2. Set eval state and goal from dataset-defined starts.
+        3. At each planning step:
+            - observe pixels / state
+            - encode pixels into latent z
+            - run CEM with the learned world model
+            - score candidate action chunks by predicted latent goal cost
+            - execute the selected action block
+            - replan with new environment feedback
+        4. Record:
+            - success rate
+            - per-episode successes
+            - evaluation time
+            - videos
+            - W&B metrics
+
+    Eval protocols:
+        - full50: 50 real-environment episodes; main downstream metric
+        - medium10: 10 real-environment episodes; checkpoint-screening metric
+
+    Additional diagnostics:
+        - Cost ranking:
+            Compare CEM cost of expert action chunks against random chunks.
+            This tests whether the WM gives the planner a useful cost surface.
+        - Action-flow eval:
+            Replace the CEM proposal mechanism with a learned flow proposal.
+            This tests policy-side flow separately from WM-side flow.
 
 ## Problems & Next Steps
 

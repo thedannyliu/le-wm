@@ -1079,3 +1079,26 @@ Latest queue check:
   - Latest endpoint medium10 evals remain pending on H200: `9796330`, `9796331`, `9796332`.
   - A100 backup medium10 evals also remain pending: `9797486`, `9797487`, `9797488`.
   - Repo root check found no `wandb/`, `outputs/`, or `multirun` directories.
+
+- PushT monitoring and follow-up, 2026-06-10 21:40 EDT:
+  - H200 latest endpoint medium10 evals completed:
+    - `9796330`, seed 0 epoch 19: `3/10`, success rate `30.0%`.
+    - `9796331`, seed 1 epoch 17: `2/10`, success rate `20.0%`.
+    - `9796332`, seed 2 epoch 17: `1/10`, success rate `10.0%`.
+    - These results confirm that later endpoint checkpoints do not outperform the earlier seed 0 epoch 14 full50 result (`30%`) and remain far below native MLP.
+  - Canceled duplicate A100 backup evals `9797486`, `9797487`, and `9797488` after the H200 evals completed.
+  - Training continuation is still healthy:
+    - Endpoint seed 0/1/2 latest metrics are epoch rows 30/28/28 with `validate/pred_loss` around `0.0056-0.0058`.
+    - Original residual flow-WM remains misaligned at deterministic `validate/pred_loss` around `1.23-1.25`.
+    - Recent timeout/preemptions were handled by supervisors; current continuation jobs include endpoint seed 0 `9805476`, endpoint seed 2 `9805624`, original flow seed 1 `9803788`, and original flow seed 2 `9803790`, with endpoint seed 1 `9805656` and original flow seed 0 `9809053` pending.
+  - Submitted latest2 endpoint medium10 full-CEM evals:
+    - `9809339`, seed 0 epoch 30, variant `flow_endpoint_medium10_fullcem_latest2_e30_s0`.
+    - `9809340`, seed 1 epoch 28, variant `flow_endpoint_medium10_fullcem_latest2_e28_s1`.
+    - `9809342`, seed 2 epoch 28, variant `flow_endpoint_medium10_fullcem_latest2_e28_s2`.
+    - Record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_flow_endpoint_formal_20260609/job_records/medium_eval_endpoint_latest2_20260610_213917.tsv`.
+  - Submitted latest2 endpoint cost-ranking diagnostics:
+    - `9809343`, seed 0 epoch 30, variant `cost_rank_flow_endpoint_s0_e30_latest2`.
+    - `9809344`, seed 1 epoch 28, variant `cost_rank_flow_endpoint_s1_e28_latest2`.
+    - `9809346`, seed 2 epoch 28, variant `cost_rank_flow_endpoint_s2_e28_latest2`.
+    - Record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_cost_diagnostics_20260609/job_records/latest2_endpoint_cost_rank_20260610_213917.tsv`.
+  - Repo root check found no `wandb/`, `outputs/`, or `multirun` directories.

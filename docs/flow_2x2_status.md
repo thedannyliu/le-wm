@@ -1226,3 +1226,23 @@ Latest queue check:
     - Seed 2 was first attempted on L40S, but Slurm rejected it because the action-flow script requests 8 CPUs and the L40S partition enforces a 4:1 CPU:GPU limit; it was immediately resubmitted on A100.
   - Current decision:
     - Do not submit another unchanged endpoint-flow eval yet. The newest validation rows strengthen the same "MSE improves without control" signal; the more informative next result is whether flow helps as an action proposal when paired with the selected native WM.
+
+- PushT monitoring and follow-up, 2026-06-11 22:49 EDT:
+  - Selected-native action-flow status:
+    - Seed 0 action-flow job `9835994` was preempted after writing `action_flow.pt`; its afterany full50 eval `9835995` completed successfully.
+    - Seed 2 action-flow job `9836010` was preempted after writing `action_flow.pt`; its afterany full50 eval `9836011` completed successfully.
+    - Seed 1 action-flow job `9835996` is still running on A100 and has already written `action_flow.pt`; its original afterany full50 eval `9835997` remains pending.
+  - Selected-native action-flow full50 results so far:
+    | Seed | Native WM epoch | Eval job | Success rate | Eval time | Read |
+    | ---: | ---: | ---: | ---: | ---: | --- |
+    | 0 | 48 | `9835995` | `62.0%` | `17.29s` | Much better than the previous epoch-100-confounded seed 0 action-flow result (`6.0%`), but below selected native CEM (`88%`). |
+    | 2 | 75 | `9836011` | `44.0%` | `20.47s` | Worse than selected native CEM (`88%`) and worse than previous epoch-100 action-flow seed 2 (`58.0%`). |
+    - Current mean over completed seeds is `53.0%`; wait for seed 1 before making the final selected-native action-flow conclusion.
+  - To avoid waiting for the long-running seed 1 action-flow job while also avoiding file races, copied the current seed 1 `action_flow.pt` to a fixed snapshot:
+    - Snapshot: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_native_selected_action_flow_20260611/pusht/wm_original_policy_flow/seed_1/action_flow_snapshots/action_flow_seed1_snapshot_20260611_224841.pt`.
+    - Submitted snapshot full50 eval `9852203` on A100, variant `selected_native_e83_action_flow_s1_snapshot_a100`.
+    - Record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_native_selected_action_flow_20260611/job_records/selected_native_action_flow_snapshot_eval_20260611_224841.tsv`.
+    - The original afterany eval `9835997` is kept and can serve as a final/best action-flow comparison if the training job exits cleanly or after preemption.
+  - Queue health:
+    - Multiple LeWM flow continuation jobs were preempted, but supervisors resubmitted replacements (`9839708`, `9843125`, `9843208`, plus pending continuations).
+    - This is cluster preemption behavior, not a new code/config failure.

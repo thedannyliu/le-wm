@@ -1281,3 +1281,33 @@ Latest queue check:
   - Queue health:
     - Current LeWM jobs are running normally under `embers`: endpoint-flow seeds 0/1/2 and residual flow seed 1 continue through the supervisor resume loop.
     - The latest4 endpoint eval/cost-rank jobs are pending on priority, with no immediate submission failures.
+
+- PushT monitoring and follow-up, 2026-06-13 18:36 EDT:
+  - Latest4 endpoint cost-rank diagnostics completed:
+    | Seed | Epoch | Mean expert rank | Random-better fraction | Read |
+    | ---: | ---: | ---: | ---: | --- |
+    | 0 | 64 | `24.5625` | `0.1831` | Much worse than latest3 seed 0 rank `7.5625`. |
+    | 1 | 56 | `20.7500` | `0.1533` | Regressed strongly from latest3 seed 1 rank `5.4375`. |
+    | 2 | 58 | `9.2500` | `0.0645` | Slightly worse than latest3 seed 2 rank `7.3125`. |
+    - Mean expert rank is `18.1875`; mean random-better fraction is `0.1336`.
+    - Interpretation: endpoint-flow prediction MSE kept improving, but planner cost ranking got worse. This strongly supports the current report thesis that lower endpoint MSE is not the right objective.
+  - Latest4 medium10 eval submit bug:
+    - Jobs `9894694`, `9894696`, and `9894698` failed immediately because `EVAL_BUDGET=10` violated the eval assertion `horizon * action_block <= eval_budget` (`5 * 5 <= eval_budget`).
+    - This was a submission-parameter error, not a model or code failure.
+    - Resubmitted with `EVAL_NUM_EVAL=10` and `EVAL_BUDGET=50`:
+      | Seed | Epoch | Retry job | Variant |
+      | ---: | ---: | ---: | --- |
+      | 0 | 64 | `9916205` | `flow_endpoint_medium10_fullcem_latest4_budgetfix_e64_s0_h100` |
+      | 1 | 56 | `9916206` | `flow_endpoint_medium10_fullcem_latest4_budgetfix_e56_s1_h100` |
+      | 2 | 58 | `9916207` | `flow_endpoint_medium10_fullcem_latest4_budgetfix_e58_s2_h100` |
+    - Record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_flow_endpoint_formal_20260609/job_records/medium_eval_endpoint_latest4_budgetfix_20260613_183422.tsv`.
+  - Residual flow-WM formal epoch-100 full50 is now complete:
+    | Seed | Eval job | Success rate | Eval time |
+    | ---: | ---: | ---: | ---: |
+    | 0 | `9891092` | `4.0%` | `314.67s` |
+    | 1 | `9896657` | `0.0%` | `436.88s` |
+    | 2 | `9882878` | `2.0%` | `443.51s` |
+    - Mean success is `2.0%`. This closes the residual flow-WM formal run: it is far below native selected CEM (`87.3 +/- 1.2%`) and much slower.
+  - Current queue:
+    - Endpoint-flow seeds 0/1/2 continue training under the supervisor resume loop.
+    - Latest4 budget-fixed medium10 evals are pending on H100 resources, with no immediate failure.

@@ -1246,3 +1246,38 @@ Latest queue check:
   - Queue health:
     - Multiple LeWM flow continuation jobs were preempted, but supervisors resubmitted replacements (`9839708`, `9843125`, `9843208`, plus pending continuations).
     - This is cluster preemption behavior, not a new code/config failure.
+
+- PushT monitoring and follow-up, 2026-06-13 02:25 EDT:
+  - Selected-native action-flow full50 is now complete:
+    | Seed | Native WM epoch | Eval job | Success rate | Eval time | Read |
+    | ---: | ---: | ---: | ---: | ---: | --- |
+    | 0 | 48 | `9835995` | `62.0%` | `17.29s` | Fairer than the prior epoch-100-confounded seed 0 result (`6.0%`), but below selected native CEM (`88%`). |
+    | 1 | 83 | `9835997` | `58.0%` | `17.85s` | Snapshot eval `9852203` was `64.0%`; final afterany eval is the non-cherry-picked value. |
+    | 2 | 75 | `9836011` | `44.0%` | `20.47s` | Still below selected native CEM (`88%`). |
+    - Mean final selected-native action-flow full50 is `54.7%`, versus selected native CEM `87.3 +/- 1.2%`.
+    - Interpretation: using selected native WMs removes the unfair epoch-100 collapse issue and improves action-flow seed 0 substantially, but action-flow still does not replace CEM as the main action selector.
+  - Residual flow-WM has reached epoch 100 for seeds 0 and 2, and the supervisor submitted full50 CEM evals:
+    | Seed | Latest validation row | `validate/pred_loss_epoch` | Eval job | Success rate | Eval time |
+    | ---: | ---: | ---: | ---: | ---: | ---: |
+    | 0 | 99 | `1.25915` | `9891092` | `4.0%` | `314.67s` |
+    | 2 | 99 | `1.24376` | `9882878` | `2.0%` | `443.51s` |
+    - Seed 1 residual flow-WM is at epoch 95 and still running/resuming; latest `validate/pred_loss_epoch=1.24908`.
+    - Interpretation: the formal epoch-100 residual flow-WM result confirms the earlier diagnostic. It is both much worse and much slower than native CEM.
+  - Endpoint-flow has continued training:
+    | Seed | Latest checkpoint | Latest validation row | `validate/pred_loss_epoch` | `validate/flow_loss_epoch` |
+    | ---: | ---: | ---: | ---: | ---: |
+    | 0 | 64 | 63 | `0.003893` | `0.045229` |
+    | 1 | 56 | 55 | `0.003816` | `0.036544` |
+    | 2 | 58 | 57 | `0.003486` | `0.052976` |
+    - Since the MSE is now substantially lower than latest3 but the previous results showed a plateau, submitted one latest4 screening batch to test whether the plateau still holds:
+      | Seed | Epoch | Medium10 eval job | Cost-rank job |
+      | ---: | ---: | ---: | ---: |
+      | 0 | 64 | `9894694` | `9894695` |
+      | 1 | 56 | `9894696` | `9894697` |
+      | 2 | 58 | `9894698` | `9894699` |
+    - Eval record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_flow_endpoint_formal_20260609/job_records/medium_eval_endpoint_latest4_20260613_022542.tsv`.
+    - Cost-rank record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_cost_diagnostics_20260609/job_records/latest4_endpoint_cost_rank_20260613_022542.tsv`.
+  - Fixed `scripts/slurm_pusht_cost_ranking_diag.sbatch` to pass optional `EXPERIMENT_VARIANT`, `WANDB_RUN_GROUP`, and `WANDB_NAME` into Hydra/W&B. This prevents latest4 cost-rank diagnostics from falling back to the default local variant path.
+  - Queue health:
+    - Current LeWM jobs are running normally under `embers`: endpoint-flow seeds 0/1/2 and residual flow seed 1 continue through the supervisor resume loop.
+    - The latest4 endpoint eval/cost-rank jobs are pending on priority, with no immediate submission failures.

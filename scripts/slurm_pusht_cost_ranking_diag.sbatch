@@ -31,6 +31,17 @@ PY="${REPO}/.conda/lewm-flow-2x2/bin/python"
 : "${POLICY:?POLICY is required}"
 : "${SEED:?SEED is required}"
 
+EXTRA_ARGS=()
+if [ -n "${EXPERIMENT_VARIANT:-}" ]; then
+  EXTRA_ARGS+=(experiment.variant="${EXPERIMENT_VARIANT}")
+fi
+if [ -n "${WANDB_RUN_GROUP:-}" ]; then
+  EXTRA_ARGS+=(wandb.config.group="${WANDB_RUN_GROUP}")
+fi
+if [ -n "${WANDB_NAME:-}" ]; then
+  EXTRA_ARGS+=(wandb.config.name="${WANDB_NAME}")
+fi
+
 "${PY}" "${REPO}/diagnose_cost_ranking.py" \
   --config-name=pusht \
   seed="${SEED}" \
@@ -47,4 +58,5 @@ PY="${REPO}/.conda/lewm-flow-2x2/bin/python"
   +diagnostic.num_eval="${DIAG_NUM_EVAL:-16}" \
   +diagnostic.num_random="${DIAG_NUM_RANDOM:-128}" \
   hydra.run.dir="${LEWM_RUNTIME_ROOT}/hydra/${SLURM_JOB_ID}/pusht_${WM_VARIANT}_${POLICY_VARIANT}_cost_rank_seed${SEED}" \
-  wandb.enabled=True
+  wandb.enabled=True \
+  "${EXTRA_ARGS[@]}"

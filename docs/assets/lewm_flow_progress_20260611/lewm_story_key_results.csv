@@ -1,7 +1,10 @@
-setting,eval,pred_loss,flow_loss,success,sec_per_episode,train_h
-Native selected CEM,full50,0.001902,,87.3,1.31,61.3
-Native early CEM,medium10,0.00284,,90.0,1.67,31.1
-Residual flow-WM,medium10,1.207489,0.061186,0.0,9.98,16.6
-Endpoint first,medium10,0.008286,0.061429,30.0,5.47,16.7
-Endpoint latest2,medium10,0.005549,0.05264,23.3,5.67,40.7
-Endpoint latest3,medium10,0.005339,0.051296,20.0,7.42,46.3
+setting,eval,pred_loss,flow_loss,success,sec_per_episode,train_h,note
+Native selected CEM,full50,0.001902,,87.3,1.31,61.3,selected native checkpoints e48/e83/e75
+Native final CEM,full50,0.1053,,58.0,1.43,85.8,epoch100 collapsed seed0
+Selected native action-flow,full50,same selected WM,,54.7,0.37,n/a,action-flow on selected native checkpoints e48/e83/e75
+Native early CEM,medium10,0.00284,,90.0,1.67,31.1,screening metric
+Residual flow-WM formal,full50,1.25066,0.03936,2.0,7.97,n/a,"epoch100, seeds 0/1/2"
+Endpoint first,medium10,0.008286,0.061429,30.0,5.47,16.7,first endpoint screening
+Endpoint latest2,medium10,0.005549,0.05264,23.3,5.67,40.7,later screening
+Endpoint latest3,medium10,0.005339,0.051296,20.0,7.42,46.3,previous real-env screening
+Endpoint latest4,medium10,0.003732,0.044916,0.0,8.96,n/a,best endpoint MSE but worse cost rank and zero control

@@ -8,3 +8,4 @@ Endpoint mid mean e19/e17/e17,5.7708,0.0368,medium10 20.0
 Endpoint latest2 mean e30/e28/e28,5.1667,0.0322,medium10 23.3
 Endpoint latest3 mean e34/e32/e33,6.7708,0.0449,medium10 20.0
 Endpoint latest4 mean e64/e56/e58,18.1875,0.1336,medium10 0.0; cost rank regressed
+Endpoint final seed0 e100,n/a,n/a,full50 seed0 4.0; cost-rank job 9986072 pending

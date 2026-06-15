@@ -1,6 +1,6 @@
 # LeWM Flow-WM Progress Report
 
-Generated: 2026-06-13 EDT
+Generated: 2026-06-15 EDT
 
 Sources:
 
@@ -17,7 +17,7 @@ We are testing whether flow can improve LeWM by replacing the learned world-mode
 
 - Native LeWM + CEM remains the anchor: `87.3 +/- 1.2%` full50 success at `1.31s/episode`.
 - Residual flow-WM is now formally closed: epoch-100 full50 is only `2.0%` mean success, with `validate/pred_loss_epoch ~= 1.25` and `7.97s/episode`.
-- Endpoint flow-WM keeps improving one-step prediction (`0.0083 -> 0.0053 -> 0.0037`), but latest4 control collapses to `0%` medium10 while planner cost ranking gets worse (`mean expert rank 6.77 -> 18.19`).
+- Endpoint flow-WM keeps improving one-step prediction (`0.0083 -> 0.0053 -> 0.0037`), but latest4 control collapses to `0%` medium10 while planner cost ranking gets worse (`mean expert rank 6.77 -> 18.19`). The first epoch-100 final checkpoint, seed 0, also only reaches `4%` full50.
 - Selected-native action-flow is fast (`0.37s/episode`) and fairer than the old epoch-100-confounded action-flow run, but still reaches only `54.7%` full50, far below native CEM.
 
 **Main insight:** the bottleneck is likely not model capacity or insufficient training time. The signal points to an interface mismatch: flow objectives can improve distributional or endpoint prediction, but CEM needs a deterministic, multi-step, action-conditional cost surface that ranks candidate action sequences correctly under closed-loop rollouts.
@@ -39,8 +39,15 @@ Fair comparison boundary: all claims below are PushT-only and use the same LeWM 
 | Endpoint flow-WM + CEM, first | medium10 | 14 / 12 / 12 | `0.0083` | `30.0 +/- 17.3` | `5.47` | Partial one-step repair. |
 | Endpoint flow-WM + CEM, latest3 | medium10 | 34 / 32 / 33 | `0.0053` | `20.0 +/- 10.0` | `7.42` | Lower MSE, no control gain. |
 | Endpoint flow-WM + CEM, latest4 | medium10 | 64 / 56 / 58 | `0.0037` | `0.0 +/- 0.0` | `8.96` | Best MSE, worst control. |
+| Endpoint flow-WM + CEM, final seed 0 | full50 | 100 / - / - | `0.0035` | `4.0` | `6.34` | Partial final; still no recovery. |
 
 -> The useful result is causal direction, not just ranking: native LeWM succeeds when validation prediction and planner cost ranking agree; flow-WM can improve its own losses without producing a robust CEM cost surface.
+
+Current live status as of 2026-06-15 12:15 EDT:
+
+- Endpoint-flow seed 0 reached epoch 100; full50 eval job `9970926` completed at `4.0%`.
+- Endpoint-flow seeds 1 and 2 are running on H100 at epoch 98; supervisors `9971577` and `9974112` will resume or submit final CEM evals after the current chunks finish.
+- Submitted final seed 0 cost-rank diagnostic job `9986072` on A100 to check whether epoch100 planner ranking matches the poor full50 result.
 
 ## Pipeline (w/ Diff)
 
@@ -103,6 +110,7 @@ Evaluation:
 | Residual flow-WM | flow + SIGReg | full50 | `1.2507` | `2.0` | `7.97` | Formal run confirms failure. |
 | Endpoint flow-WM | flow + endpoint + SIGReg | medium10 | `0.0053` | `20.0` | `7.42` | One-step repair, closed-loop plateau. |
 | Endpoint flow-WM latest4 | flow + endpoint + SIGReg | medium10 | `0.0037` | `0.0` | `8.96` | Lower MSE, worse planner ranking and control. |
+| Endpoint flow-WM final seed 0 | flow + endpoint + SIGReg | full50 | `0.0035` | `4.0` | `6.34` | Epoch100 still fails. |
 
 -> This isolates the failure to the WM/planner interface. Residual flow fails before control because CEM needs a point rollout. Endpoint flow makes that point rollout numerically reasonable, but the planner still does not get a reliable action-sequence cost landscape.
 
@@ -116,6 +124,7 @@ Evaluation:
 | Latest2 medium10 | 30 / 28 / 28 | `0.0055` | `0.0526` | `23.3` | rank `5.17` |
 | Latest3 medium10 | 34 / 32 / 33 | `0.0053` | `0.0513` | `20.0` | rank `6.77` |
 | Latest4 medium10 | 64 / 56 / 58 | `0.0037` | `0.0449` | `0.0` | rank `18.19` |
+| Final seed0 full50 | 100 / - / - | `0.0035` | `0.0446` | `4.0` | pending job `9986072` |
 
 -> This is the strongest "do not just train longer" signal. The model becomes better at the supervised endpoint target while planner cost ranking gets worse, so the missing target is not more endpoint MSE; it is planner-relevant multi-step cost calibration.
 
@@ -127,7 +136,7 @@ Evaluation:
 | --- | --- | --- | --- |
 | Native selected vs final seed 0 | pred loss `0.00239 -> 0.31281` | full50 `88% -> 6%` | validation pred loss is meaningful for native checkpoint selection. |
 | Residual flow-WM formal | flow loss `0.0394`, pred loss `1.2507` | full50 `2%` | flow loss alone is misleading. |
-| Endpoint flow-WM | pred loss `0.0083 -> 0.0037` | medium10 `30% -> 0%` | one-step endpoint MSE is not enough. |
+| Endpoint flow-WM | pred loss `0.0083 -> 0.0035` | medium10 `30% -> 0%`; final seed0 full50 `4%` | one-step endpoint MSE is not enough. |
 | Endpoint latest3 -> latest4 | cost rank `6.77 -> 18.19` | medium10 `20% -> 0%` | planner ranking regresses while MSE improves. |
 
 -> Prediction loss is useful only when it matches the planner interface. For native LeWM it does; for flow-WM it becomes a weak proxy. The next metric should measure whether the WM ranks CEM candidate rollouts the same way the real environment would, not only whether the next latent is close.
@@ -148,6 +157,7 @@ Lower expert rank is better. Rank `1` means expert action chunks are scored best
 | Endpoint latest2 mean | `5.17` | `0.0322` | medium10 `23.3%` |
 | Endpoint latest3 mean | `6.77` | `0.0449` | medium10 `20.0%` |
 | Endpoint latest4 mean | `18.19` | `0.1336` | medium10 `0.0%` |
+| Endpoint final seed0 e100 | pending | pending | full50 seed0 `4.0%` |
 
 -> Cost ranking separates native/residual cleanly and now gives a strong negative endpoint signal: latest4 has the best endpoint MSE but the worst endpoint cost rank. Expert-vs-random ranking is still an imperfect diagnostic, but this regression is enough to stop treating endpoint MSE as a useful standalone objective.
 
@@ -163,6 +173,7 @@ Lower expert rank is better. Rank `1` means expert action chunks are scored best
 | Residual flow-WM formal | n/a | `7.97` | `2.0` | dominated |
 | Endpoint flow-WM latest3 | `46.3` | `7.42` | `20.0` | dominated |
 | Endpoint flow-WM latest4 | n/a | `8.96` | `0.0` | worse with more training |
+| Endpoint flow-WM final seed0 | n/a | `6.34` | `4.0` | no final recovery |
 
 -> Runtime is a research constraint, not just engineering overhead. Since CEM calls the WM many times per control step, a flow-WM must either deliver a large success gain or expose useful uncertainty to the planner. The current version does neither, so it is Pareto-dominated.
 
@@ -212,3 +223,5 @@ Caveat:
 - Latest3 cost-rank jobs wrote local metrics under the default diagnostic variant path (`wm_flow_endpoint_policy_original/seed_x/eval`) because the diagnostic sbatch did not pass `experiment.variant`; W&B summaries and Slurm logs match the values reported above.
 - This was fixed before latest4 cost-rank diagnostics, which now write to explicit latest4 variant paths.
 - Latest4 endpoint medium10 evals were resubmitted with the correct `EVAL_BUDGET=50`; all three seeds completed at `0.0%` success.
+- On 2026-06-15, endpoint seed 0 reached epoch 100 and its full50 eval completed at `4.0%`; seeds 1/2 are still running at epoch 98, so the formal epoch100 mean is not complete yet.
+- Final seed 0 cost-rank diagnostic job `9986072` is queued on A100/embers under variant `cost_rank_flow_endpoint_final_e100_s0_a100`.

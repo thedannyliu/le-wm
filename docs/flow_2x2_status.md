@@ -1311,3 +1311,32 @@ Latest queue check:
   - Current queue:
     - Endpoint-flow seeds 0/1/2 continue training under the supervisor resume loop.
     - Latest4 budget-fixed medium10 evals are pending on H100 resources, with no immediate failure.
+
+- PushT monitoring and follow-up, 2026-06-15 12:15 EDT:
+  - Latest4 budget-fixed endpoint medium10 evals completed after the 2026-06-13 report update:
+    | Seed | Epoch | Eval job | Success rate | Eval time |
+    | ---: | ---: | ---: | ---: | ---: |
+    | 0 | 64 | `9916205` | `0.0%` | `89.40s` |
+    | 1 | 56 | `9916206` | `0.0%` | `91.25s` |
+    | 2 | 58 | `9916207` | `0.0%` | `88.07s` |
+    - Mean success is `0.0%`; mean eval time is `89.57s` (`8.96s/episode`).
+    - Interpretation: latest4 confirms that lower endpoint prediction MSE does not recover closed-loop control.
+  - Endpoint-flow seed 0 reached epoch 100:
+    | Seed | Checkpoint | Latest validation row | `validate/pred_loss_epoch` | `validate/flow_loss_epoch` | Full50 eval job | Success rate | Eval time |
+    | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+    | 0 | `weights_epoch_100.pt` | 99 | `0.003478` | `0.044631` | `9970926` | `4.0%` | `317.19s` |
+    - This is a partial final result only; seeds 1 and 2 have not completed epoch 100 yet.
+  - Endpoint-flow seeds 1 and 2 are still progressing under the resume loop:
+    | Seed | Current running job | Latest checkpoint | Latest validation row | `validate/pred_loss_epoch` | `validate/flow_loss_epoch` | Supervisor |
+    | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+    | 1 | `9971575` | 98 | 98 | `0.002803` | `0.032686` | `9971577` |
+    | 2 | `9974111` | 98 | 98 | `0.002605` | `0.047600` | `9974112` |
+    - Both jobs are on H100/embers. Their supervisors should either resume if the current chunks time out/preempt, or submit final CEM evals after `weights_epoch_100.pt` appears.
+  - Submitted final seed 0 cost-rank diagnostic:
+    - Job `9986072`, variant `cost_rank_flow_endpoint_final_e100_s0_a100`, A100/embers.
+    - Record: `/storage/project/r-agarg35-0/eliu354/external_data/lewm_stablewm/experiments/pusht_cost_diagnostics_20260609/job_records/final_endpoint_cost_rank_20260615_121454.tsv`.
+  - Updated progress report:
+    - `docs/lewm_flow_progress_report_20260610.md`
+    - `docs/assets/lewm_flow_progress_20260611/lewm_story_key_results.csv`
+    - `docs/assets/lewm_flow_progress_20260611/lewm_cost_rank_summary.csv`
+    - Regenerated report figures under `docs/assets/lewm_flow_progress_20260611/`.
